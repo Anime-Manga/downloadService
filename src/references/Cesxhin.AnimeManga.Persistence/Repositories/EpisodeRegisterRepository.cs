@@ -1,0 +1,80 @@
+﻿using Cesxhin.AnimeManga.Application.Generic;
+using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
+using Cesxhin.AnimeManga.Application.NlogManager;
+using Cesxhin.AnimeManga.Domain.Models;
+using NLog;
+using Npgsql;
+using RepoDb;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Cesxhin.AnimeManga.Persistence.Repositories
+{
+    public class EpisodeRegisterRepository : IEpisodeRegisterRepository
+    {
+        //log
+        private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
+
+        //env
+        readonly string _connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
+
+        //get all episodesRegisters
+        public async Task<List<EpisodeRegister>> GetObjectsRegisterByObjectId(string id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    var rs = await connection.QueryAsync<EpisodeRegister>(e => e.EpisodeId == id);
+                    return ConvertGeneric<EpisodeRegister>.ConvertIEnurableToListCollection(rs);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed GetEpisodeRegisterByEpisodeId, details error: {ex.Message}");
+                    return null;
+                }
+            }
+        }
+
+        //insert
+        public async Task<EpisodeRegister> InsertObjectRegisterAsync(EpisodeRegister episodeRegister)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    await connection.InsertAsync(episodeRegister);
+                    return episodeRegister;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed InsertEpisodeRegisterAsync, details error: {ex.Message}");
+                    return null;
+                }
+            }
+        }
+
+        //update
+        public async Task<EpisodeRegister> UpdateObjectRegisterAsync(EpisodeRegister episodeRegister)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    var rs = await connection.UpdateAsync(episodeRegister, e => e.EpisodeId == episodeRegister.EpisodeId);
+
+                    //check update
+                    if(rs > 0)
+                        return episodeRegister;
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed UpdateEpisodeRegisterAsync, details error: {ex.Message}");
+                    return null;
+                }
+            }
+        }
+    }
+}
