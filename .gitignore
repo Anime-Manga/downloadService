@@ -400,4 +400,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 src/references
+*.sln
+Properties
 # End of https://www.toptal.com/developers/gitignore/api/csharp
