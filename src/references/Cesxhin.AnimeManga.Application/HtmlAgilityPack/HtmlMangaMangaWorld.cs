@@ -177,6 +177,9 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                     var numberCurrentChapter = float.Parse(currentChapter.Split(new char[] { ' ', '\n' })[1]);
 
+                    if (link.Contains("style=list"))
+                        link = link.Replace("?style=list", "?style=pages");
+
                     var numberMaxImages = GetNumberMaxImage(link);
 
                     chaptersList.Add(new ChapterDTO
@@ -213,7 +216,17 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             //get image
             var webClient = new WebClient();
 
-            var doc = GetMangaHtml(urlPage + "/" + page);
+            if (urlPage.Contains("style=list"))
+                urlPage = urlPage.Replace("?style=list", "?style=pages");
+
+            string completeUrl;
+
+            if (urlPage.Contains("?style="))
+                completeUrl = urlPage.Replace("?style=", "/" + page + "?style=");
+            else
+                completeUrl = urlPage + "/" + page;
+
+            var doc = GetMangaHtml(completeUrl);
 
             var imgUrl = doc.DocumentNode
                 .SelectNodes("//div/div/img")
