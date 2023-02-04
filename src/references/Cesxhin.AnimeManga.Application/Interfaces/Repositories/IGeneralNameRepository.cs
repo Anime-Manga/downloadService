@@ -7,7 +7,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
     {
         //get
         Task<List<TGeneralName>> GetNameAllAsync();
-        Task<List<TGeneralName>> GetNameByNameAsync(string name);
+        Task<TGeneralName> GetNameByNameAsync(string name);
         Task<List<TGeneralName>> GetMostNameByNameAsync(string name);
 
         //Insert

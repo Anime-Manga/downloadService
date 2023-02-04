@@ -19,6 +19,23 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         //env
         readonly string _connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
+        public async Task<int> DeleteByNameAsync(string id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    var rs = await connection.DeleteAsync<Episode>(e => e.VideoId == id);
+                    return rs;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed GetEpisodeByIDAsync, details error: {ex.Message}");
+                    return 0;
+                }
+            }
+        }
+
         //get episode by id
         public async Task<IEnumerable<Episode>> GetObjectsByIDAsync(string id)
         {
@@ -44,10 +61,10 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             {
                 try
                 {
-                    var rs = await connection.QueryMultipleAsync<Episode, Anime>(e => e.AnimeId == name, e=> e.Name == name || e.Surname == name);
+                    var rs = await connection.QueryAsync<Episode>(e => e.VideoId == name);
 
                     //create list ienurable to list
-                    var list = ConvertGeneric<Episode>.ConvertIEnurableToListCollection(rs.Item1);
+                    var list = ConvertGeneric<Episode>.ConvertIEnurableToListCollection(rs);
 
                     //order by asc
                     list.Sort(delegate (Episode p1, Episode p2){ return p1.NumberEpisodeCurrent.CompareTo(p2.NumberEpisodeCurrent); });

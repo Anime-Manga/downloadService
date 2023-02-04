@@ -10,8 +10,8 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("id")]
         public string ID { get; set; }
 
-        [Map("animeid")]
-        public string AnimeId { get; set; }
+        [Map("videoid")]
+        public string VideoId { get; set; }
 
         [Map("urlvideo")]
         public string UrlVideo { get; set; }
@@ -59,7 +59,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
             return new Episode
             {
                 ID = episode.ID,
-                AnimeId = episode.AnimeId,
+                VideoId = episode.VideoId,
                 UrlVideo = episode.UrlVideo,
                 NumberEpisodeCurrent = episode.NumberEpisodeCurrent,
                 NumberSeasonCurrent = episode.NumberSeasonCurrent,

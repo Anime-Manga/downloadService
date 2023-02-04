@@ -110,5 +110,10 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                 }
             }
         }
+
+        Task<Manga> IGeneralNameRepository<Manga>.GetNameByNameAsync(string name)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

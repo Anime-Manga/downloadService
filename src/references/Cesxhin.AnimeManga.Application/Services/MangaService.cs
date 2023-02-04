@@ -29,7 +29,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         //delete manga
         public async Task<string> DeleteNameByIdAsync(string id)
         {
-            var manga = await _mangaRepository.GetNameByNameAsync(id);
+            /*var manga = await _mangaRepository.GetNameByNameAsync(id);
 
             if (manga.Count <= 0)
                 return null;
@@ -48,7 +48,8 @@ namespace Cesxhin.AnimeManga.Application.Services
             if (rs <= 0)
                 return null;
 
-            return id;
+            return id;*/
+            return null;
 
         }
 
@@ -114,12 +115,12 @@ namespace Cesxhin.AnimeManga.Application.Services
         //get manga by name
         public async Task<MangaDTO> GetNameByNameAsync(string name)
         {
-            var listManga = await _mangaRepository.GetNameByNameAsync(name);
+            /*var listManga = await _mangaRepository.GetNameByNameAsync(name);
 
             foreach (var manga in listManga)
             {
                 return MangaDTO.MangaToMangaDTO(manga);
-            }
+            }*/
 
             //not found
             return null;
@@ -152,6 +153,11 @@ namespace Cesxhin.AnimeManga.Application.Services
                 return null;
 
             return MangaDTO.MangaToMangaDTO(rs);
+        }
+
+        Task<IEnumerable<MangaDTO>> IGeneralNameService<MangaDTO>.GetNameAllWithAllAsync()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

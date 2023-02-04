@@ -5,6 +5,7 @@ using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using MassTransit;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -27,12 +28,12 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
         private readonly ParallelManager<object> parallel = new();
 
         //Istance Api
-        private readonly Api<GenericAnimeDTO> animeApi = new();
+        private readonly Api<JObject> animeApi = new();
         private readonly Api<EpisodeDTO> episodeApi = new();
         private readonly Api<EpisodeRegisterDTO> episodeRegisterApi = new();
 
         //download api
-        private List<GenericAnimeDTO> listAnime = null;
+        private List<JObject> listAnime = null;
 
         public UpdateAnime(IBus publicEndpoint)
         {
@@ -41,6 +42,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         public void ExecuteUpdate()
         {
+            /*
             _logger.Info($"Start update anime");
 
             try
@@ -74,14 +76,14 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 parallel.Start();
                 parallel.WhenCompleted();
                 parallel.ClearList();
-            }
+            }*/
 
             _logger.Info($"End update anime");
         }
 
-        private object CheckEpisode(GenericAnimeDTO anime, EpisodeDTO episode, Api<EpisodeDTO> episodeApi, Api<EpisodeRegisterDTO> episodeRegisterApi)
+        private object CheckEpisode(JObject anime, EpisodeDTO episode, Api<EpisodeDTO> episodeApi, Api<EpisodeRegisterDTO> episodeRegisterApi)
         {
-            var episodeRegister = anime.EpisodeRegister.Find(e => e.EpisodeId == episode.ID);
+            /* var episodeRegister = anime.EpisodeRegister.Find(e => e.EpisodeId == episode.ID);
             if (episodeRegister == null)
             {
                 _logger.Warn($"not found episodeRegister by episode id: {episode.ID}");
@@ -137,7 +139,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 //if not found file
                 if (found == false)
                     ConfirmStartDownloadAnime(episode, episodeApi);
-            }
+            }*/
 
             return null;
         }
@@ -153,7 +155,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 await episodeApi.PutOne("/anime/statusDownload", episode);
 
                 await _publishEndpoint.Publish(episode);
-                _logger.Info($"this file ({episode.AnimeId} episode: {episode.NumberEpisodeCurrent}) does not exists, sending message to DownloadService");
+                _logger.Info($"this file ({episode.VideoId} episode: {episode.NumberEpisodeCurrent}) does not exists, sending message to DownloadService");
             }
             catch (ApiNotFoundException ex)
             {

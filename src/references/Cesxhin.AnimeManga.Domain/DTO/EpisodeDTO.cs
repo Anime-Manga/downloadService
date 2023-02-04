@@ -5,7 +5,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
     public class EpisodeDTO
     {
         public string ID { get; set; }
-        public string AnimeId { get; set; }
+        public string VideoId { get; set; }
         public string UrlVideo { get; set; }
         public int NumberEpisodeCurrent { get; set; }
         public int NumberSeasonCurrent { get; set; }
@@ -32,7 +32,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
             return new EpisodeDTO
             {
                 ID = episode.ID,
-                AnimeId = episode.AnimeId,
+                VideoId = episode.VideoId,
                 UrlVideo = episode.UrlVideo,
                 NumberEpisodeCurrent = episode.NumberEpisodeCurrent,
                 NumberSeasonCurrent = episode.NumberSeasonCurrent,

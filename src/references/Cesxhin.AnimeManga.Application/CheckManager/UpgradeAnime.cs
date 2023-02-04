@@ -5,6 +5,7 @@ using Cesxhin.AnimeManga.Application.HtmlAgilityPack;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.DTO;
 using MassTransit;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -22,12 +23,12 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
         private readonly string _folder = Environment.GetEnvironmentVariable("BASE_PATH") ?? "/";
 
         //list
-        private List<GenericAnimeDTO> listGenerics = new();
+        private List<JObject> listGenerics = new();
         private List<EpisodeRegisterDTO> listEpisodeRegister;
         private List<EpisodeRegisterDTO> blacklist;
 
         //api
-        private readonly Api<GenericAnimeDTO> genericApi = new();
+        private readonly Api<JObject> genericApi = new();
         private readonly Api<EpisodeDTO> episodeApi = new();
         private readonly Api<EpisodeRegisterDTO> episodeRegisterApi = new();
 
@@ -42,6 +43,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         public void ExecuteUpgrade()
         {
+            /*
             _logger.Info($"Start upgrade anime");
 
             try
@@ -69,7 +71,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 _logger.Info("Check new episodes for Anime: " + anime.Name);
 
                 //check new episode
-                checkEpisodes = HtmlAnimeSaturn.GetEpisodes(anime.UrlPage, anime.Name);
+                checkEpisodes = RipperVideoGeneric.GetEpisodes(null, anime.UrlPage, anime.Name);
 
                 //check if null
                 if (checkEpisodes == null)
@@ -174,7 +176,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 }
                 //clear resource
                 listEpisodesAdd.Clear();
-            }
+            }*/
 
             _logger.Info($"End upgrade anime");
         }

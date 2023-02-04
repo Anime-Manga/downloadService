@@ -7,6 +7,7 @@ using Cesxhin.AnimeManga.Domain.Models;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using MassTransit;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -41,7 +42,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             //api
             Api<EpisodeRegisterDTO> episodeRegisterApi = new();
-            Api<AnimeDTO> animeApi = new();
+            Api<JObject> animeApi = new();
             Api<EpisodeDTO> episodeApi = new();
 
             EpisodeRegisterDTO episodeRegister = null;
@@ -100,10 +101,10 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         _logger.Info("try download: " + episode.UrlVideo);
                         try
                         {
-                            var anime = animeApi.GetOne($"/anime/name/{episode.AnimeId}").GetAwaiter().GetResult();
+                            var anime = animeApi.GetOne($"/anime/name/{episode.VideoId}").GetAwaiter().GetResult();
 
                             //setup client
-                            client.Headers.Add("Referer", anime.UrlPage);
+                            //client.Headers.Add("Referer", anime.UrlPage);
                             client.Timeout = 60000; //? check
 
                             //start download
@@ -188,7 +189,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     List<EpisodeBuffer> buffer = new();
                     List<Func<EpisodeBuffer>> tasks = new();
 
-                    _logger.Info($"start download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                    _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
 
                     //change by pending to downloading
                     episode.StateDownload = "downloading";
@@ -222,7 +223,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         episode.PercentualDownload = 0;
                         SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                        _logger.Error($"failed download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                        _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
                         return;
                     }
 
@@ -237,7 +238,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         }
                     }
 
-                    _logger.Info($"end download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                    _logger.Info($"end download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
 
                     //send end download
                     episode.StateDownload = "wait conversion";
