@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Persistence.Repositories
 {
-    public class DescriptionRepository : IDescriptionRepository
+    public class DescriptionVideoRepository : IDescriptionVideoRepository
     {
         //log
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());

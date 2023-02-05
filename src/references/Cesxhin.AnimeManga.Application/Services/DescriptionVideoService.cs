@@ -11,17 +11,17 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
 {
-    public class DescriptionService : IDescriptionService
+    public class DescriptionVideoService : IDescriptionVideoService
     {
         //log
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
         //interfaces
-        private readonly IDescriptionRepository _descriptionRepository;
+        private readonly IDescriptionVideoRepository _descriptionRepository;
         private readonly IEpisodeRepository _episodeRepository;
         private readonly IEpisodeRegisterRepository _episodeRegisterRepository;
 
-        public DescriptionService(IDescriptionRepository descriptionRepository, IEpisodeRepository episodeRepository, IEpisodeRegisterRepository episodeRegisterRepository)
+        public DescriptionVideoService(IDescriptionVideoRepository descriptionRepository, IEpisodeRepository episodeRepository, IEpisodeRegisterRepository episodeRegisterRepository)
         {
             _descriptionRepository = descriptionRepository;
             _episodeRepository = episodeRepository;

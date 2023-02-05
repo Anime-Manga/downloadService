@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Services
 {
-    public interface IDescriptionService : IGeneralNameService<JObject>
+    public interface IDescriptionVideoService : IGeneralNameService<JObject>
     {
     }
 }
