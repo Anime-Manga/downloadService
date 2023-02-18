@@ -3,146 +3,103 @@ using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
 using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.Remoting;
 
 namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 {
-    public static class HtmlMangaMangaWorld
+    public static class RipperBookGeneric
     {
         //log
         private static readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
         //parallel
-        private static readonly ParallelManager<EpisodeDTO> parallel = new();
+        private static readonly ParallelManager<ChapterDTO> parallel = new();
 
-        public static HtmlDocument GetMangaHtml(string urlPage)
+        public static JObject GetDescriptionBook(JObject schema, string urlPage)
         {
-            return new HtmlWeb().Load(urlPage);
+            _logger.Info($"Start download page book: {urlPage}");
+
+            //get page
+            HtmlDocument doc = new HtmlWeb().Load(urlPage);
+
+            //create empty for save to db
+            var descriptionDB = JObject.Parse("{}").ToObject<JObject>();
+
+            //get dynamic fields
+            var fields = schema.GetValue("description").ToObject<JObject>();
+            foreach (var nameField in fields)
+            {
+                var result = RipperSchema.GetValue(fields.GetValue(nameField.Key).ToObject<JObject>(), doc);
+                int intResult;
+
+                if (result == null)
+                    descriptionDB.Add(nameField.Key, null);
+                else if (int.TryParse(result, out intResult))
+                    descriptionDB.Add(nameField.Key, intResult);
+                else
+                    descriptionDB.Add(nameField.Key, result.Trim().Replace(" +", ""));
+            }
+
+            descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
+
+            _logger.Info($"End download page book: {urlPage}");
+
+            return descriptionDB;
         }
 
-        public static MangaDTO GetManga(HtmlDocument doc, string urlPage)
-        {
-            string author=null, artist=null, type=null;
-            bool status=false;
-            int totalVolumes=0, totalChapters=0, releaseDate=0;
-            string imageBase64 = null;
-
-            _logger.Info($"Start download page manga: {urlPage}");
-
-            var infoManga = doc.DocumentNode
-                .SelectNodes("//section/div/div/div/div/div/div/div[2]/div[1]/div[@class='col-12 col-md-6']")
-                .ToArray();
-
-            //get info base of the anime
-            string[] word = null;
-            foreach(var info in infoManga)
-            {
-                word = info.InnerText.Split(new char[] { ':', '\n' });
-                if (word[0].Contains("Autore"))
-                {
-                    author = word[1];
-
-                }
-                else if (word[0].Contains("Artista"))
-                {
-                    artist = word[1];
-                }
-                else if (word[0].Contains("Anno di uscita"))
-                {
-                    releaseDate = int.Parse(word[1]);
-                }
-                else if (word[0].Contains("Volumi totali"))
-                {
-                    totalVolumes = int.Parse(word[1]);
-                }
-                else if (word[0].Contains("Capitoli totali"))
-                {
-                    totalChapters = int.Parse(word[1]);
-                }
-                else if (word[0].Contains("Durata episodi"))
-                {
-                    totalChapters = int.Parse(word[1]);
-                }
-                else if (word[0].Contains("Tipo"))
-                {
-                    type = word[1];
-                }else if (word[0].Contains("Stato"))
-                {
-                    if (word[1].Contains("Finito"))
-                        status = true;
-                    else
-                        status = false;
-                }
-            }
-
-            //get description
-            var description = doc.DocumentNode
-                .SelectNodes("//section/div/div/div/div/div/div[3]/div[2]")
-                .First().InnerText;
-
-            //get image
-            var webClient = new WebClient();
-
-            var imageUrl = doc.DocumentNode
-                .SelectNodes("//section/div/div/div/div/div/div/div[1]/img")
-                .First()
-                .Attributes["src"].Value;
-            try
-            {
-                var imageBytes = webClient.DownloadData(imageUrl);
-                imageBase64 = Convert.ToBase64String(imageBytes);
-            }
-            catch
-            {
-                _logger.Error($"Error download image from this url {imageUrl}");
-            }
-
-            //get name manga
-            var nameManga = doc.DocumentNode
-                .SelectNodes("//section/div/div/div/div/div/div/div[2]/h1")
-                .First().InnerText;
-
-            return new MangaDTO
-            {
-                Artist = artist,
-                Author = author,
-                TotalChapters = totalChapters,
-                Description = description,
-                Image = imageBase64,
-                Status = status,
-                Type = type,
-                UrlPage = urlPage,
-                TotalVolumes = totalVolumes,
-                DateRelease = releaseDate,
-                Name = nameManga
-            };
-        }
-
-        public static List<ChapterDTO> GetChapters(HtmlDocument doc, string urlPage, MangaDTO manga)
+        public static List<ChapterDTO> GetChapters(JObject schema, string urlPage, string name)
         {
             List<ChapterDTO> chaptersList = new();
 
             _logger.Info($"Start download chapters manga: {urlPage}");
 
-            HtmlNode[] volumes = null;
-            try
+            //collection
+            var collection = schema.GetValue("book").ToObject<JObject>().GetValue("collection").ToObject<JObject>();
+            HtmlDocument doc = new HtmlWeb().Load(urlPage);
+
+            var results = RipperSchema.GetValue(collection, doc);
+
+            //procedure
+            var procedure = schema.GetValue("book").ToObject<JObject>().GetValue("procedure").ToObject<JObject>();
+            var resultBooks = new List<ChapterDTO>();
+
+            var reverseCount = schema.GetValue("book").ToObject<JObject>().GetValue("collection").ToObject<JObject>().GetValue("reverseCount").ToObject<bool>();
+
+            if (collection.GetValue("thread").ToObject<bool>() == true)
             {
-                volumes = doc.DocumentNode
-                    .SelectNodes("//section/div/div/div/div/div[2]/div/div[3]/div[@class='volume-element pl-2']")
-                    .ToArray();
+                List<Func<ChapterDTO>> tasks = new();
+
+                foreach (var item in results)
+                {
+                    var currentItem = item;
+                    tasks.Add(new Func<ChapterDTO>(() => { return GetChapterRecursive(procedure, procedure.Count, 0, currentItem, name); }));
+                }
+
+                //when finish
+                parallel.AddTasks(tasks);
+                parallel.Start();
+                parallel.WhenCompleted();
+                resultBooks = parallel.GetResultAndClear();
             }
-            catch(ArgumentNullException)
+            else
             {
-                _logger.Warn($"Not found volumes of {manga.Name}, try set volume 0 and get chapters");
-                volumes = doc.DocumentNode
-                    .SelectNodes("//section/div/div/div/div/div[2]/div/div[@class='chapters-wrapper py-2 pl-0']")
-                    .ToArray();
+                foreach (var item in results)
+                {
+                    resultBooks.Add(GetChapterRecursive(procedure, procedure.Count, 0, item, name));
+                }
             }
 
+            _logger.Info($"End download page episode: {urlPage}");
+
+            return resultBooks;
+
+            /*
             foreach (var volume in volumes)
             {
                 HtmlNode[] chapters = null;
@@ -193,11 +150,29 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     });
                 }
             }
-            return chaptersList;
+            return chaptersList;*/
+        }
+
+        private static ChapterDTO GetChapterRecursive(JObject actualProcedure, int step, int current, string urlPage, string name)
+        {
+
+            var stepSelect = actualProcedure[current.ToString()].ToObject<JObject>();
+
+            var doc = new HtmlWeb().Load(urlPage);
+            var newUrlPage = RipperSchema.GetValue(stepSelect, doc, 0, 0, name);
+
+            //set step
+            current += 1;
+
+            if (current == step)
+                return newUrlPage;
+
+            return GetChapterRecursive(actualProcedure, step, current, newUrlPage, name);
         }
 
         private static int GetNumberMaxImage(string urlPage)
         {
+            /*
             var doc = GetMangaHtml(urlPage);
             var select = doc.DocumentNode
                 .SelectNodes("//div/div/div/div/div/select[@class='page custom-select']")
@@ -208,11 +183,12 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 .Last()
                 .Attributes["value"].Value;
 
-            return int.Parse(maxPage);
+            return int.Parse(maxPage);*/
+            return 0;
         }
 
         public static byte[] GetImagePage(string urlPage, int page)
-        {   
+        {   /*
             //get image
             var webClient = new WebClient();
 
@@ -241,7 +217,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             {
                 _logger.Error($"Error download image from this url {imgUrl}");
                 return null;
-            }
+            }*/
+            return null;
         }
 
         public static List<GenericUrl> GetMangaUrl(string name)
@@ -265,7 +242,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         .SelectNodes("//div/div/div/div[2]/div[@class='entry']")
                         .ToArray();
 
-                    foreach(var manga in listManga)
+                    foreach (var manga in listManga)
                     {
                         //get image cover
                         imageUrl = manga

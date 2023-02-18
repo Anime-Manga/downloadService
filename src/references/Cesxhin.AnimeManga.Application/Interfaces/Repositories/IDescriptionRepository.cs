@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
 {
-    public interface IDescriptionVideoRepository : IGeneralNameRepository<JObject>
+    public interface IDescriptionRepository : IGeneralNameRepository<JObject>
     {
 
     }

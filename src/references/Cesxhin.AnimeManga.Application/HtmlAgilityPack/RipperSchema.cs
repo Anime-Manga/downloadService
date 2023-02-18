@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 {
@@ -16,19 +17,6 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
     {
         //log
         private static readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
-
-        public static JObject readFile(string nameCfg)
-        {
-            var schemasFile = System.IO.File.ReadAllText(".\\schemas.json");
-            var schema = JObject.Parse(schemasFile);
-
-            if (schema.ContainsKey(nameCfg))
-            {
-                return schema.GetValue(nameCfg).ToObject<JObject>();
-            }
-            else
-                throw new Exception("Not exsists cfg: "+nameCfg);
-        }
 
         public static dynamic GetValue(JObject schema, HtmlDocument doc, int numberSeason = 0, int numberEpisode = 0, string name = null)
         {
@@ -46,13 +34,43 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 try
                 {
                     //InnerHtml
-                    if (types[i] == "string" || types[i] == "number")
+                    if (types[i] == "string")
                     {
                         return doc.DocumentNode
                         .SelectNodes(path)
                         .First()
                         .ChildNodes[childNodesSelect]
                         .InnerHtml;
+                    }else if (types[i] == "number")
+                    {
+                        float intResult;
+
+                        var result = doc.DocumentNode
+                        .SelectNodes(path)
+                        .First()
+                        .ChildNodes[childNodesSelect]
+                        .InnerHtml;
+
+                        if (schema.ContainsKey("removeWords")){
+                           var words = schema.GetValue("removeWords").ToObject<IEnumerable<string>>();
+
+                            foreach (var word in words)
+                            {
+                                result = result.ToLower().Replace(word.ToLower(), "");
+                            }
+
+                            result = result.Trim();
+                        }
+
+                        if (float.TryParse(result, out intResult))
+                        {
+                            if (schema.ContainsKey("startZero") && schema.GetValue("startZero").ToObject<bool>() == true)
+                                return intResult + 1;
+
+                            return intResult;
+                        }
+                        else
+                            return -1;
                     }
                     else if (types[i] == "link") //Attributes.Value
                     {
@@ -119,6 +137,15 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     }
                     else if (types[i] == "array")
                     {
+                        var attributes = (string)schema.GetValue("attributes");
+
+                        if(attributes == null)
+                        {
+                            return doc.DocumentNode
+                                .SelectNodes(path)
+                                .ToList();
+                        }
+
                         var resultArray = new List<string>();
                         var list = doc.DocumentNode
                         .SelectNodes(path)
@@ -126,10 +153,30 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                         foreach (var item in list)
                         {
-                            resultArray.Add(item.Attributes["href"].Value);
+                            resultArray.Add(item.Attributes[attributes].Value);
                         }
 
                         return resultArray;
+                    }else if (types[i] == "book/link")
+                    {
+                        var attributes = (string)schema.GetValue("attributes");
+
+                        var url = doc.DocumentNode
+                            .SelectNodes(path)
+                            .First()
+                            .Attributes[attributes].Value;
+
+                        if (schema.ContainsKey("addUrl")){
+                            var addUrl = (string)schema.GetValue("addUrl");
+                            if (!url.Contains(addUrl)){
+                                if (url.LastIndexOf('/') == (url.Trim().Length - 1))
+                                    url = $"{url.Substring(0, url.LastIndexOf('/'))}/{addUrl}";
+                                else
+                                    url += addUrl;
+                            }
+                        }
+
+                        return DownloadMetadataChapter(schema, url, name);
                     }
                     break;
                 }
@@ -150,6 +197,43 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         }
 
 
+        public static string RemoveSpecialCharacters(string str)
+        {
+            //remove character special
+            return Regex.Replace(str, "[^a-zA-Z0-9_() ]+", "", RegexOptions.Compiled);
+        }
+
+        private static ChapterDTO DownloadMetadataChapter(JObject schema, string urlBook, string name)
+        {
+            var doc = new HtmlWeb().Load(urlBook);
+
+            //get maxImage
+            var maxImageSchema = schema.GetValue("numberMaxImage").ToObject<JObject>();
+            var maxImage = GetValue(maxImageSchema, doc);
+            maxImage = maxImage[maxImage.Count - 1];
+            maxImage = int.Parse(maxImage);
+
+            if(maxImageSchema.ContainsKey("startZero") && maxImageSchema.GetValue("startZero").ToObject<bool>() == true)
+                maxImage += 1;
+
+            //get number volume
+            var numberVolumeSchema = schema.GetValue("getVolume").ToObject<JObject>();
+            var numberVolume = GetValue(numberVolumeSchema, doc);
+
+            //get number chapter
+            var numberChapterSchema = schema.GetValue("getChapter").ToObject<JObject>();
+            var numberChapter = GetValue(numberChapterSchema, doc);
+
+            return new ChapterDTO
+            {
+                ID = $"{name}-v{numberVolume}-c{numberChapter}",
+                CurrentChapter = numberChapter,
+                CurrentVolume = numberVolume,
+                NameManga = name,
+                UrlPage = urlBook,
+                NumberMaxImage = maxImage
+            };
+        }
 
         private static EpisodeDTO DownloadMetadataEpisode(int numberSeason, int numberEpisode, string urlVideo, string name, bool mp4)
         {

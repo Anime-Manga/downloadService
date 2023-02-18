@@ -14,7 +14,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         public string NameManga { get; set; }
 
         [Map("currentvolume")]
-        public int CurrentVolume { get; set; }
+        public float CurrentVolume { get; set; }
 
         [Map("currentchapter")]
         public float CurrentChapter { get; set; }

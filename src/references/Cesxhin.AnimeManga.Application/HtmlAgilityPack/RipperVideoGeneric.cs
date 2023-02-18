@@ -24,9 +24,9 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         private static readonly ParallelManager<EpisodeDTO> parallel = new();
         private static readonly ParallelManager<string> _parallel = new();
 
-        public static JObject GetAnime(JObject schema, string urlPage)
+        public static JObject GetDescriptionVideo(JObject schema, string urlPage)
         {
-            _logger.Info($"Start download page anime: {urlPage}");
+            _logger.Info($"Start download page video: {urlPage}");
 
             //get page
             HtmlDocument doc = new HtmlWeb().Load(urlPage);
@@ -46,9 +46,9 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     descriptionDB.Add(nameField.Key, result.Trim().Replace(" +", ""));
             }
 
-            descriptionDB["name_id"] = RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
+            descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
 
-            _logger.Info($"End download page anime: {urlPage}");
+            _logger.Info($"End download page video: {urlPage}");
 
             return descriptionDB;
         }
@@ -123,7 +123,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         //get list anime external
         public static List<GenericUrl> GetAnimeUrl(string name)
         {
-            _logger.Info($"Start download lsit anime, search: {name}");
+            _logger.Info($"Start download lsit video, search: {name}");
             //get page
             HtmlDocument doc = new HtmlWeb().Load("https://www.animesaturn.cc/animelist?search=" + name);
 
@@ -163,7 +163,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                     animeUrl.Add(new GenericUrl
                     {
-                        Name = RemoveSpecialCharacters(nameAnime),
+                        Name = RipperSchema.RemoveSpecialCharacters(nameAnime),
                         Url = linkPage,
                         UrlImage = linkCopertina,
                         TypeView = "anime"
@@ -173,14 +173,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 catch { /*ignore other link a */ }
             }
 
-            _logger.Info($"End download lsit anime, search: {name}");
+            _logger.Info($"End download lsit video, search: {name}");
             return animeUrl;
-        }
-
-        public static string RemoveSpecialCharacters(string str)
-        {
-            //remove character special
-            return Regex.Replace(str, "[^a-zA-Z0-9_() ]+", "", RegexOptions.Compiled);
         }
     }
 }

@@ -19,6 +19,22 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         //env
         readonly string _connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
+        public async Task<int> DeleteByNameAsync(string id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                try
+                {
+                    return await connection.DeleteAsync<Chapter>(e => e.ID == id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed GetChapterByIDAsync, details error: {ex.Message}");
+                    return 0;
+                }
+            }
+        }
+
         public async Task<IEnumerable<Chapter>> GetObjectsByIDAsync(string id)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
@@ -42,10 +58,10 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             {
                 try
                 {
-                    var rs = await connection.QueryMultipleAsync<Chapter, Manga>(e => e.NameManga == nameManga, e => e.Name == nameManga);
+                    var rs = await connection.QueryAsync<Chapter>(e => e.NameManga == nameManga);
 
                     //create list ienurable to list
-                    var list = ConvertGeneric<Chapter>.ConvertIEnurableToListCollection(rs.Item1);
+                    var list = ConvertGeneric<Chapter>.ConvertIEnurableToListCollection(rs);
 
                     //order by asc
                     list.Sort(delegate (Chapter p1, Chapter p2) { return p1.CurrentChapter.CompareTo(p2.CurrentChapter); });

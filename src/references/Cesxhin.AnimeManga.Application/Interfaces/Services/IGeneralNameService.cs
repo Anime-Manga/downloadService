@@ -6,15 +6,15 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Services
     public interface IGeneralNameService<TGeneralNameDTO>
     {
         //get
-        Task<IEnumerable<TGeneralNameDTO>> GetNameAllAsync();
-        Task<TGeneralNameDTO> GetNameByNameAsync(string name);
-        Task<IEnumerable<TGeneralNameDTO>> GetMostNameByNameAsync(string name);
-        Task<IEnumerable<TGeneralNameDTO>> GetNameAllWithAllAsync();
+        Task<IEnumerable<TGeneralNameDTO>> GetNameAllAsync(string nameCfg);
+        Task<TGeneralNameDTO> GetNameByNameAsync(string nameCfg, string name);
+        Task<IEnumerable<TGeneralNameDTO>> GetMostNameByNameAsync(string nameCfg, string name);
+        Task<IEnumerable<TGeneralNameDTO>> GetNameAllWithAllAsync(string nameCfg);
 
         //insert
-        Task<TGeneralNameDTO> InsertNameAsync(TGeneralNameDTO anime);
+        Task<TGeneralNameDTO> InsertNameAsync(string nameCfg, TGeneralNameDTO anime);
 
         //delete
-        Task<string> DeleteNameByIdAsync(string id);
+        Task<string> DeleteNameByIdAsync(string nameCfg, string id);
     }
 }

@@ -6,7 +6,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
     {
         public string ID { get; set; }
         public string NameManga { get; set; }
-        public int CurrentVolume { get; set; }
+        public float CurrentVolume { get; set; }
         public float CurrentChapter { get; set; }
         public int NumberMaxImage { get; set; }
         public string UrlPage { get; set; }

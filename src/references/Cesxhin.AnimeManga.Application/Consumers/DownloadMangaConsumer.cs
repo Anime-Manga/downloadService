@@ -139,7 +139,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
         private string Download(ChapterDTO chapter, string path, int currentImage)
         {
-            var imgBytes = HtmlMangaMangaWorld.GetImagePage(chapter.UrlPage, currentImage + 1);
+            var imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage + 1);
 
             File.WriteAllBytes(path, imgBytes);
 

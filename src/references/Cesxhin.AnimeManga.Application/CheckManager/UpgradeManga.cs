@@ -64,8 +64,8 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 _logger.Info("Check new episodes for manga: " + manga.Name);
 
                 //check new episode
-                var doc = HtmlMangaMangaWorld.GetMangaHtml(manga.UrlPage);
-                checkChapters = HtmlMangaMangaWorld.GetChapters(doc, manga.UrlPage, manga);
+                //var doc = RipperBookGeneric.GetMangaHtml(manga.UrlPage);
+                //checkChapters = RipperBookGeneric.GetChapters(doc, manga.UrlPage, manga);
 
                 //check if null
                 if (checkChapters == null)
