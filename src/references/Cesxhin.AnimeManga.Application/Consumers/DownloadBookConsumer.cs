@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Consumers
 {
-    public class DownloadMangaConsumer : IConsumer<ChapterDTO>
+    public class DownloadBookConsumer : IConsumer<ChapterDTO>
     {
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
@@ -139,7 +139,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
         private string Download(ChapterDTO chapter, string path, int currentImage)
         {
-            var imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage + 1);
+            var imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage, chapter);
 
             File.WriteAllBytes(path, imgBytes);
 
@@ -150,7 +150,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         {
             try
             {
-                chapterApi.PutOne("/manga/statusDownload", chapter).GetAwaiter().GetResult();
+                chapterApi.PutOne("/book/statusDownload", chapter).GetAwaiter().GetResult();
             }
             catch (ApiNotFoundException ex)
             {

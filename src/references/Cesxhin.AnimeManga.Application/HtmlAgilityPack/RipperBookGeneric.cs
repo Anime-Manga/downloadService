@@ -98,59 +98,6 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             _logger.Info($"End download page episode: {urlPage}");
 
             return resultBooks;
-
-            /*
-            foreach (var volume in volumes)
-            {
-                HtmlNode[] chapters = null;
-                try
-                {
-                    chapters = volume.SelectNodes("div[2]/div[@class='chapter']").ToArray();
-                }
-                catch (ArgumentNullException)
-                {
-                    chapters = volume.SelectNodes("div[@class='chapter pl-2']").ToArray();
-                }
-
-
-                var numberCurrentVolume = volume
-                    .SelectNodes("div")
-                    .First().InnerText;
-
-                int numberVolume = 0;
-                if (!numberCurrentVolume.Contains("Capitolo"))
-                    numberVolume = int.Parse(numberCurrentVolume.Split(new char[] { ' ', '\n' })[1]);
-
-                foreach (var chapter in chapters)
-                {
-                    var link = chapter
-                        .SelectNodes("a")
-                        .First()
-                        .Attributes["href"].Value;
-                    var currentChapter = chapter
-                        .SelectNodes("a/span")
-                        .First()
-                        .InnerText;
-
-                    var numberCurrentChapter = float.Parse(currentChapter.Split(new char[] { ' ', '\n' })[1]);
-
-                    if (link.Contains("style=list"))
-                        link = link.Replace("?style=list", "?style=pages");
-
-                    var numberMaxImages = GetNumberMaxImage(link);
-
-                    chaptersList.Add(new ChapterDTO
-                    {
-                        ID = $"{manga.Name}-v{numberVolume}-c{numberCurrentChapter}",
-                        UrlPage = link,
-                        NameManga = manga.Name,
-                        CurrentChapter = numberCurrentChapter,
-                        CurrentVolume = numberVolume,
-                        NumberMaxImage = numberMaxImages
-                    });
-                }
-            }
-            return chaptersList;*/
         }
 
         private static ChapterDTO GetChapterRecursive(JObject actualProcedure, int step, int current, string urlPage, string name)
@@ -170,113 +117,31 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return GetChapterRecursive(actualProcedure, step, current, newUrlPage, name);
         }
 
-        private static int GetNumberMaxImage(string urlPage)
+        public static byte[] GetImagePage(string urlPage, int page, ChapterDTO chapter)
         {
-            /*
-            var doc = GetMangaHtml(urlPage);
-            var select = doc.DocumentNode
-                .SelectNodes("//div/div/div/div/div/select[@class='page custom-select']")
-                .First();
+            JObject _schema = JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
+            var schema = _schema.GetValue(chapter.NameCfg).ToObject<JObject>();
+            var download = schema.GetValue("download").ToObject<JObject>();
 
-            var maxPage = select
-                .SelectNodes("option")
-                .Last()
-                .Attributes["value"].Value;
+            var path = download.GetValue("path").ToString();
 
-            return int.Parse(maxPage);*/
-            return 0;
-        }
+            download["path"] = path.Replace("{numberPage}", page.ToString());
 
-        public static byte[] GetImagePage(string urlPage, int page)
-        {   /*
-            //get image
-            var webClient = new WebClient();
+            var doc = new HtmlWeb().Load(urlPage);
 
-            if (urlPage.Contains("style=list"))
-                urlPage = urlPage.Replace("?style=list", "?style=pages");
+            var imgUrl = RipperSchema.GetValue(download, doc);
 
-            string completeUrl;
-
-            if (urlPage.Contains("?style="))
-                completeUrl = urlPage.Replace("?style=", "/" + page + "?style=");
-            else
-                completeUrl = urlPage + "/" + page;
-
-            var doc = GetMangaHtml(completeUrl);
-
-            var imgUrl = doc.DocumentNode
-                .SelectNodes("//div/div/img")
-                .First()
-                .Attributes["src"].Value;
-
-            try
-            {
-                return webClient.DownloadData(imgUrl);
-            }
-            catch
-            {
-                _logger.Error($"Error download image from this url {imgUrl}");
-                return null;
-            }*/
-            return null;
-        }
-
-        public static List<GenericUrl> GetMangaUrl(string name)
-        {
-            List<GenericUrl> listUrlManga = new();
-
-            HtmlDocument doc;
-            HtmlNode[] listManga;
-
-            string url, imageUrl = null, urlPage = null, nameManga = null;
-
-            var page = 1;
-            while (true)
+            using (var webClient = new WebClient())
             {
                 try
                 {
-                    url = $"https://www.mangaworld.in/archive?keyword={name}&page={page}";
-                    doc = new HtmlWeb().Load(url);
-
-                    listManga = doc.DocumentNode
-                        .SelectNodes("//div/div/div/div[2]/div[@class='entry']")
-                        .ToArray();
-
-                    foreach (var manga in listManga)
-                    {
-                        //get image cover
-                        imageUrl = manga
-                            .SelectNodes("a/img")
-                            .First()
-                            .Attributes["src"].Value;
-
-                        //url page
-                        urlPage = manga
-                            .SelectNodes("a")
-                            .First()
-                            .Attributes["href"].Value;
-
-                        //name
-                        nameManga = manga
-                            .SelectNodes("div/p")
-                            .First().InnerText;
-
-                        listUrlManga.Add(new GenericUrl
-                        {
-                            Name = nameManga,
-                            Url = urlPage,
-                            UrlImage = imageUrl,
-                            TypeView = "manga"
-                        });
-                    }
+                    return webClient.DownloadData(imgUrl);
                 }
                 catch
                 {
-                    //not found other pages
-                    return listUrlManga;
+                    _logger.Error($"Error download image from this url {imgUrl}");
+                    return null;
                 }
-
-                page++;
             }
         }
     }

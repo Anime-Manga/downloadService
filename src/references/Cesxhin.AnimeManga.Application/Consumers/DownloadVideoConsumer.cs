@@ -4,8 +4,6 @@ using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
-using FFMpegCore;
-using FFMpegCore.Enums;
 using MassTransit;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -13,14 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Consumers
 {
-    public class DownloadAnimeConsumer : IConsumer<EpisodeDTO>
+    public class DownloadVideoConsumer : IConsumer<EpisodeDTO>
     {
         //const
         const int LIMIT_TIMEOUT = 10;
@@ -32,7 +29,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         private readonly ParallelManager<EpisodeBuffer> parallel = new();
 
         //temp
-        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestAnime\\temp";
+        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
 
 
         public Task Consume(ConsumeContext<EpisodeDTO> context)
@@ -42,7 +39,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             //api
             Api<EpisodeRegisterDTO> episodeRegisterApi = new();
-            Api<JObject> animeApi = new();
+            Api<JObject> videoApi = new();
             Api<EpisodeDTO> episodeApi = new();
 
             EpisodeRegisterDTO episodeRegister = null;
@@ -101,7 +98,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         _logger.Info("try download: " + episode.UrlVideo);
                         try
                         {
-                            var anime = animeApi.GetOne($"/anime/name/{episode.VideoId}").GetAwaiter().GetResult();
+                            var video = videoApi.GetOne($"/video/name/{episode.VideoId}").GetAwaiter().GetResult();
 
                             //setup client
                             //client.Headers.Add("Referer", anime.UrlPage);
@@ -114,7 +111,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         }
                         catch (ApiNotFoundException ex)
                         {
-                            _logger.Error($"not found anime so can't set headers referer for download, details: {ex.Message}");
+                            _logger.Error($"Not found anime so can't set headers referer for download, details: {ex.Message}");
                         }
                         catch (Exception ex)
                         {
@@ -422,7 +419,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         {
             try
             {
-                episodeApi.PutOne("/anime/statusDownload", episode).GetAwaiter().GetResult();
+                episodeApi.PutOne("/video/statusDownload", episode).GetAwaiter().GetResult();
             }catch (ApiNotFoundException ex)
             {
                 _logger.Error($"Not found episode id: {episode.ID}, details: {ex.Message}");
