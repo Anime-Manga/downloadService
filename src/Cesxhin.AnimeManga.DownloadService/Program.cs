@@ -7,7 +7,7 @@ using NLog;
 using Cesxhin.AnimeManga.Application.Generic;
 using Quartz;
 using Cesxhin.AnimeManga.Application.CronJob;
-using FFMpegCore;
+using Cesxhin.AnimeManga.Application.Schema;
 
 namespace Cesxhin.AnimeManga.DownloadService
 {
@@ -16,6 +16,8 @@ namespace Cesxhin.AnimeManga.DownloadService
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
+
+            SchemaControl.Check();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -37,8 +39,8 @@ namespace Cesxhin.AnimeManga.DownloadService
                                     credentials.Password(Environment.GetEnvironmentVariable("PASSWORD_RABBIT") ?? "guest");
                                 });
 
-                            cfg.ReceiveEndpoint("download-anime", e => {
-                                e.Consumer<DownloadAnimeConsumer>(cc =>
+                            cfg.ReceiveEndpoint("download-video", e => {
+                                e.Consumer<DownloadVideoConsumer>(cc =>
                                 {
                                     string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
@@ -46,8 +48,8 @@ namespace Cesxhin.AnimeManga.DownloadService
                                 });
                             });
 
-                            cfg.ReceiveEndpoint("download-manga", e => {
-                                e.Consumer<DownloadMangaConsumer>(cc =>
+                            cfg.ReceiveEndpoint("download-book", e => {
+                                e.Consumer<DownloadBookConsumer>(cc =>
                                 {
                                     string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
