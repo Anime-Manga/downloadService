@@ -34,11 +34,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             foreach (var nameField in fields)
             {
                 var result = RipperSchema.GetValue(fields.GetValue(nameField.Key).ToObject<JObject>(), doc);
-                int intResult;
-                if (int.TryParse(result, out intResult))
-                    descriptionDB.Add(nameField.Key, intResult);
-                else
-                    descriptionDB.Add(nameField.Key, result.Trim().Replace(" +", ""));
+                descriptionDB.Add(nameField.Key, result);
             }
 
             descriptionDB["url_page"] = urlPage;
@@ -91,8 +87,11 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                 foreach (var item in resultCollection)
                 {
-                    var currentItem = item;
-                    tasks.Add(new Func<EpisodeDTO>(() => { return GetEpisodesRecursive(procedure, procedure.Count, 0, currentItem, numberSeason, numberEpisode, name); }));
+                    var itemThread = item;
+                    var numberSeasonThread = numberSeason;
+                    var numberEpisodeThread = numberEpisode;
+
+                    tasks.Add(new Func<EpisodeDTO>(() => { return GetEpisodesRecursive(procedure, procedure.Count, 0, itemThread, numberSeasonThread, numberEpisodeThread, name); }));
                     numberEpisode += 1;
                 }
 

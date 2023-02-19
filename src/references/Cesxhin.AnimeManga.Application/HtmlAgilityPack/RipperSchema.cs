@@ -40,11 +40,9 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         .SelectNodes(path)
                         .First()
                         .ChildNodes[childNodesSelect]
-                        .InnerHtml;
+                        .InnerHtml.Trim();
                     }else if (types[i] == "number")
                     {
-                        float intResult;
-
                         var result = doc.DocumentNode
                         .SelectNodes(path)
                         .First()
@@ -61,16 +59,35 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                             result = result.Trim();
                         }
+                        dynamic resultParse;
 
-                        if (float.TryParse(result, out intResult))
+                        if (schema.ContainsKey("parse") && schema.GetValue("parse").ToString() == "number")
                         {
-                            if (schema.ContainsKey("startZero") && schema.GetValue("startZero").ToObject<bool>() == true)
-                                return (intResult + 1).ToString();
-
-                            return (intResult).ToString();
+                            try
+                            {
+                                resultParse = int.Parse(result);
+                            }
+                            catch (FormatException ex)
+                            {
+                                resultParse = null;
+                            }
                         }
                         else
-                            return "-1";
+                        {
+                            try
+                            {
+                                resultParse = float.Parse(result);
+                            }
+                            catch (FormatException ex)
+                            {
+                                resultParse = null;
+                            }
+                        }
+
+                        if (schema.ContainsKey("startZero") && schema.GetValue("startZero").ToObject<bool>() == true)
+                            return (resultParse + 1);
+
+                        return resultParse;
                     }
                     else if (types[i] == "link") //Attributes.Value
                     {
@@ -184,6 +201,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 catch(Exception e)
                 {
                     _logger.Warn(e);
+
                     continue;
                 }
                 finally
@@ -206,37 +224,54 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
         private static ChapterDTO DownloadMetadataChapter(JObject schema, string urlBook, string name, string nameCfg)
         {
-            var doc = new HtmlWeb().Load(urlBook);
+            int attempt = 5;
 
-            //get maxImage
-            var maxImageSchema = schema.GetValue("numberMaxImage").ToObject<JObject>();
-            var maxImage = GetValue(maxImageSchema, doc);
-            maxImage = maxImage[maxImage.Count - 1];
-            maxImage = int.Parse(maxImage);
-
-            if(maxImageSchema.ContainsKey("startZero") && maxImageSchema.GetValue("startZero").ToObject<bool>() == true)
-                maxImage += 1;
-
-            //get number volume
-            var numberVolumeSchema = schema.GetValue("getVolume").ToObject<JObject>();
-            var numberVolume = GetValue(numberVolumeSchema, doc);
-            numberVolume = float.Parse(numberVolume);
-
-            //get number chapter
-            var numberChapterSchema = schema.GetValue("getChapter").ToObject<JObject>();
-            var numberChapter = GetValue(numberChapterSchema, doc);
-            numberChapter = float.Parse(numberChapter);
-
-            return new ChapterDTO
+            while (attempt > 0)
             {
-                ID = $"{name}-v{numberVolume}-c{numberChapter}",
-                CurrentChapter = numberChapter,
-                CurrentVolume = numberVolume,
-                NameManga = name,
-                UrlPage = urlBook,
-                NumberMaxImage = maxImage,
-                NameCfg = nameCfg 
-            };
+                var doc = new HtmlWeb().Load(urlBook);
+
+                //get maxImage
+                var maxImageSchema = schema.GetValue("numberMaxImage").ToObject<JObject>();
+                var maxImage = GetValue(maxImageSchema, doc);
+                maxImage = maxImage[maxImage.Count - 1];
+                maxImage = int.Parse(maxImage);
+
+                if (maxImageSchema.ContainsKey("startZero") && maxImageSchema.GetValue("startZero").ToObject<bool>() == true)
+                    maxImage += 1;
+
+                //get number volume
+                var numberVolumeSchema = schema.GetValue("getVolume").ToObject<JObject>();
+                var numberVolume = GetValue(numberVolumeSchema, doc);
+
+                if (numberVolume == null)
+                    numberVolume = 1;
+
+                //get number chapter
+                var numberChapterSchema = schema.GetValue("getChapter").ToObject<JObject>();
+                var numberChapter = GetValue(numberChapterSchema, doc);
+
+                try
+                {
+                    return new ChapterDTO
+                    {
+                        ID = $"{name}-v{numberVolume}-c{numberChapter}",
+                        CurrentChapter = numberChapter,
+                        CurrentVolume = numberVolume,
+                        NameManga = name,
+                        UrlPage = urlBook,
+                        NumberMaxImage = maxImage,
+                        NameCfg = nameCfg
+                    };
+                }
+                catch
+                {
+                    attempt--;
+                    _logger.Warn($"Failed download url: {urlBook}, remaining attempts {attempt}");
+                }
+            }
+
+            _logger.Fatal($"Impossible download this chapter, details: {urlBook}");
+            return null;
         }
 
         private static EpisodeDTO DownloadMetadataEpisode(int numberSeason, int numberEpisode, string urlVideo, string name, bool mp4)
