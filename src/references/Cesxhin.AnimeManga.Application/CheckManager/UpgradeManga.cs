@@ -4,7 +4,9 @@ using Cesxhin.AnimeManga.Application.Generic;
 using Cesxhin.AnimeManga.Application.HtmlAgilityPack;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.DTO;
+using HtmlAgilityPack;
 using MassTransit;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -55,22 +57,24 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
             //step check on website if the anime is still active
             foreach (var list in listGenerics)
             {
-                var manga = list.Manga;
+                var manga = JObject.Parse(list.Book);
 
                 //get list episodes by name
                 List<ChapterDTO> checkChapters = null;
                 List<ChapterDTO> listChaptersAdd = null;
 
-                _logger.Info("Check new episodes for manga: " + manga.Name);
+                var urlPage = (string)manga.GetValue("page_url");
+
+                _logger.Info("Check new episodes for manga: " + urlPage);
 
                 //check new episode
-                //var doc = RipperBookGeneric.GetMangaHtml(manga.UrlPage);
-                //checkChapters = RipperBookGeneric.GetChapters(doc, manga.UrlPage, manga);
+                //var doc = new HtmlWeb().Load(urlPage)
+                //checkChapters = RipperBookGeneric.GetChapters(doc, urlPage, manga);
 
                 //check if null
                 if (checkChapters == null)
                 {
-                    _logger.Error($"Can't download with this url, {manga.UrlPage}");
+                    _logger.Error($"Can't download with this url, {urlPage}");
                     continue;
                 }
 
@@ -92,7 +96,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
                 if (listChaptersAdd.Count > 0)
                 {
-                    _logger.Info($"There are new chapters ({listChaptersAdd.Count}) of {manga.Name}");
+                    _logger.Info($"There are new chapters ({listChaptersAdd.Count}) of {manga.GetValue("name_id")}");
 
                     //insert to db
                     listChaptersAdd = chapterApi.PostMore("/chapters", listChaptersAdd).GetAwaiter().GetResult();
@@ -133,7 +137,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                     chapterRegisterApi.PostMore("/chapters/registers", listChapterRegister).GetAwaiter();
 
                     //create message for notify
-                    string message = $"💽UpgradeService say: \nAdd new chapter of {manga.Name}\n";
+                    string message = $"💽UpgradeService say: \nAdd new chapter of {manga.GetValue("name_id")}\n";
 
                     listChaptersAdd.Sort(delegate (ChapterDTO p1, ChapterDTO p2) { return p1.CurrentChapter.CompareTo(p2.CurrentChapter); });
                     foreach (var episodeNotify in listChaptersAdd)
@@ -146,7 +150,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                         var messageNotify = new NotifyDTO
                         {
                             Message = message,
-                            Image = manga.Image
+                            Image = (string)manga.GetValue("cover")
                         };
                         _publishEndpoint.Publish(messageNotify).GetAwaiter().GetResult();
                     }
@@ -156,7 +160,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                     }
 
 
-                    _logger.Info($"Done upgrade! of {manga.Name}");
+                    _logger.Info($"Done upgrade! of {manga.GetValue("name_id")}");
                 }
                 //clear resource
                 listChaptersAdd.Clear();

@@ -18,7 +18,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         //log
         private static readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
-        public static dynamic GetValue(JObject schema, HtmlDocument doc, int numberSeason = 0, int numberEpisode = 0, string name = null)
+        public static dynamic GetValue(JObject schema, HtmlDocument doc, int numberSeason = 0, int numberEpisode = 0, string name = null, string nameCfg = null)
         {
             var paths = schema.GetValue("path").ToObject<IEnumerable<string>>();
             int i = 0, childNodesSelect=0;
@@ -65,12 +65,12 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         if (float.TryParse(result, out intResult))
                         {
                             if (schema.ContainsKey("startZero") && schema.GetValue("startZero").ToObject<bool>() == true)
-                                return intResult + 1;
+                                return (intResult + 1).ToString();
 
-                            return intResult;
+                            return (intResult).ToString();
                         }
                         else
-                            return -1;
+                            return "-1";
                     }
                     else if (types[i] == "link") //Attributes.Value
                     {
@@ -105,6 +105,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                                 _logger.Error($"Error download from this url {result}");
                             }
                         }
+                        return result;
                     }
                     else if (types[i] == "video/mp4")
                     {
@@ -176,7 +177,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                             }
                         }
 
-                        return DownloadMetadataChapter(schema, url, name);
+                        return DownloadMetadataChapter(schema, url, name, nameCfg);
                     }
                     break;
                 }
@@ -203,7 +204,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return Regex.Replace(str, "[^a-zA-Z0-9_() ]+", "", RegexOptions.Compiled);
         }
 
-        private static ChapterDTO DownloadMetadataChapter(JObject schema, string urlBook, string name)
+        private static ChapterDTO DownloadMetadataChapter(JObject schema, string urlBook, string name, string nameCfg)
         {
             var doc = new HtmlWeb().Load(urlBook);
 
@@ -219,10 +220,12 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             //get number volume
             var numberVolumeSchema = schema.GetValue("getVolume").ToObject<JObject>();
             var numberVolume = GetValue(numberVolumeSchema, doc);
+            numberVolume = float.Parse(numberVolume);
 
             //get number chapter
             var numberChapterSchema = schema.GetValue("getChapter").ToObject<JObject>();
             var numberChapter = GetValue(numberChapterSchema, doc);
+            numberChapter = float.Parse(numberChapter);
 
             return new ChapterDTO
             {
@@ -231,7 +234,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 CurrentVolume = numberVolume,
                 NameManga = name,
                 UrlPage = urlBook,
-                NumberMaxImage = maxImage
+                NumberMaxImage = maxImage,
+                NameCfg = nameCfg 
             };
         }
 

@@ -4,7 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web;
 using Cesxhin.AnimeManga.Application.Exceptions;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Cesxhin.AnimeManga.Application.Generic
 {
@@ -22,11 +24,13 @@ namespace Cesxhin.AnimeManga.Application.Generic
         };
 
         //get one object
-        public async Task<T> GetOne(string path)
+        public async Task<T> GetOne(string path, Dictionary<string, string> query = null)
         {
             using (var client = new HttpClient())
             {
-                var resultHttp = await client.GetAsync($"{_protocol}://{_address}:{_port}{path}");
+                var url = QueryHelpers.AddQueryString($"{_protocol}://{_address}:{_port}{path}", query);
+
+                var resultHttp = await client.GetAsync(url);
                 if (resultHttp.IsSuccessStatusCode)
                 {
                     //string to class object
@@ -48,11 +52,13 @@ namespace Cesxhin.AnimeManga.Application.Generic
         }
 
         //get more object
-        public async Task<List<T>> GetMore(string path)
+        public async Task<List<T>> GetMore(string path, Dictionary<string, string> query = null)
         {
             using (var client = new HttpClient())
             {
-                var resultHttp = await client.GetAsync($"{_protocol}://{_address}:{_port}{path}");
+                var url = QueryHelpers.AddQueryString($"{_protocol}://{_address}:{_port}{path}", query);
+
+                var resultHttp = await client.GetAsync(url);
                 if (resultHttp.IsSuccessStatusCode)
                 {
                     //string to class object

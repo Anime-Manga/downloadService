@@ -25,7 +25,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             {
                 try
                 {
-                    return await connection.DeleteAsync<Chapter>(e => e.ID == id);
+                    return await connection.DeleteAsync<Chapter>(e => e.NameManga == id);
                 }
                 catch (Exception ex)
                 {

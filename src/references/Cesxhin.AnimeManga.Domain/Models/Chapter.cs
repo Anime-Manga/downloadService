@@ -31,7 +31,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("percentualdownload")]
         public int PercentualDownload { get; set; }
 
-        [Map("nameCfg")]
+        [Map("namecfg")]
         public string NameCfg { get; set; }
 
         //convert ChapterDTO to Chapter

@@ -3,15 +3,10 @@ using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
 using HtmlAgilityPack;
-using m3uParser;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
 
 namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 {
@@ -46,6 +41,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     descriptionDB.Add(nameField.Key, result.Trim().Replace(" +", ""));
             }
 
+            descriptionDB["url_page"] = urlPage;
             descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
 
             _logger.Info($"End download page video: {urlPage}");
@@ -121,60 +117,83 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         }
 
         //get list anime external
-        public static List<GenericUrl> GetAnimeUrl(string name)
+        public static List<GenericUrl> GetVideoUrl(JObject schema, string name)
         {
-            _logger.Info($"Start download lsit video, search: {name}");
-            //get page
-            HtmlDocument doc = new HtmlWeb().Load("https://www.animesaturn.cc/animelist?search=" + name);
+            _logger.Info($"Start download list video, search: {name}");
 
-            //get number find elements
-            string results = doc.DocumentNode
-                .SelectNodes("//div/div/span/span/b[2]")
-                .First().InnerText;
+            List<GenericUrl> listUrlVideo = new();
 
-            //int numberAnime = int.Parse(results);
+            HtmlDocument doc;
 
-            //get animes
-            var animes = doc.DocumentNode
-                .SelectNodes("//ul/li/div")
-                .ToList();
+            string url, prefixPage = null, prefixSearch, imageUrl = null, urlPage = null, nameVideo = null;
+            var docBook = new HtmlDocument();
 
-            List<GenericUrl> animeUrl = new();
-            foreach (var anime in animes)
+            var page = 1;
+            while (true)
             {
                 try
                 {
-                    //get link page
-                    var linkPage = anime
-                        .SelectNodes("a")
-                        .First()
-                        .Attributes["href"].Value;
+                    url = schema.GetValue("url_search").ToString();
+                    prefixSearch = schema.GetValue("prefixSearch").ToString();
 
-                    //get anime
-                    var nameAnime = anime
-                        .SelectNodes("div/h3/a")
-                        .First().InnerText;
+                    if (schema.ContainsKey("prefixPage"))
+                        prefixPage = schema.GetValue("prefixPage").ToString();
 
-                    //get url
-                    var linkCopertina = anime
-                        .SelectNodes("a/img[2]")
-                        .First()
-                        .Attributes["src"].Value;
+                    var isPage = schema.GetValue("page").ToObject<bool>();
 
-                    animeUrl.Add(new GenericUrl
+                    if (isPage && prefixPage != null)
+                        url = $"{url}{prefixSearch}={name}&{prefixPage}={page}";
+                    else
+                        url = $"{url}{prefixSearch}={name}";
+
+                    doc = new HtmlWeb().Load(url);
+
+
+                    var collection = schema.GetValue("collection").ToObject<JObject>();
+
+                    var listBook = RipperSchema.GetValue(collection, doc);
+
+                    var description = schema.GetValue("description").ToObject<JObject>();
+
+                    foreach (var manga in listBook)
                     {
-                        Name = RipperSchema.RemoveSpecialCharacters(nameAnime),
-                        Url = linkPage,
-                        UrlImage = linkCopertina,
-                        TypeView = "anime"
-                    });
+                        docBook.LoadHtml(manga.InnerHtml);
 
+                        //get image cover
+                        var imageUrlSchema = description.GetValue("imageUrl").ToObject<JObject>();
+                        imageUrl = RipperSchema.GetValue(imageUrlSchema, docBook);
+
+                        //url page
+                        var urlPageSchema = description.GetValue("urlPage").ToObject<JObject>();
+                        urlPage = RipperSchema.GetValue(urlPageSchema, docBook);
+
+                        //name
+                        var nameBookSchema = description.GetValue("name").ToObject<JObject>();
+                        nameVideo = RipperSchema.GetValue(nameBookSchema, docBook);
+
+                        listUrlVideo.Add(new GenericUrl
+                        {
+                            Name = RipperSchema.RemoveSpecialCharacters(nameVideo),
+                            Url = urlPage,
+                            UrlImage = imageUrl,
+                            TypeView = "video"
+                        });
+                    }
+
+                    if (!isPage)
+                        break;
                 }
-                catch { /*ignore other link a */ }
+                catch
+                {
+                    //not found other pages
+                    break;
+                }
+
+                page++;
             }
 
-            _logger.Info($"End download lsit video, search: {name}");
-            return animeUrl;
+            _logger.Info($"End download list video, search: {name}");
+            return listUrlVideo;
         }
     }
 }

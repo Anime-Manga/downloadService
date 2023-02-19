@@ -40,12 +40,13 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                 if (result == null)
                     descriptionDB.Add(nameField.Key, null);
-                else if (int.TryParse(result, out intResult))
+                else if (int.TryParse(result.ToString(), out intResult))
                     descriptionDB.Add(nameField.Key, intResult);
                 else
                     descriptionDB.Add(nameField.Key, result.Trim().Replace(" +", ""));
             }
 
+            descriptionDB["url_page"] = urlPage;
             descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
 
             _logger.Info($"End download page book: {urlPage}");
@@ -53,7 +54,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return descriptionDB;
         }
 
-        public static List<ChapterDTO> GetChapters(JObject schema, string urlPage, string name)
+        public static List<ChapterDTO> GetChapters(JObject schema, string urlPage, string name, string nameCfg)
         {
             List<ChapterDTO> chaptersList = new();
 
@@ -78,7 +79,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 foreach (var item in results)
                 {
                     var currentItem = item;
-                    tasks.Add(new Func<ChapterDTO>(() => { return GetChapterRecursive(procedure, procedure.Count, 0, currentItem, name); }));
+                    tasks.Add(new Func<ChapterDTO>(() => { return GetChapterRecursive(procedure, procedure.Count, 0, currentItem, name, nameCfg); }));
                 }
 
                 //when finish
@@ -91,7 +92,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             {
                 foreach (var item in results)
                 {
-                    resultBooks.Add(GetChapterRecursive(procedure, procedure.Count, 0, item, name));
+                    resultBooks.Add(GetChapterRecursive(procedure, procedure.Count, 0, item, name, nameCfg));
                 }
             }
 
@@ -100,13 +101,13 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return resultBooks;
         }
 
-        private static ChapterDTO GetChapterRecursive(JObject actualProcedure, int step, int current, string urlPage, string name)
+        private static ChapterDTO GetChapterRecursive(JObject actualProcedure, int step, int current, string urlPage, string name, string nameCfg)
         {
 
             var stepSelect = actualProcedure[current.ToString()].ToObject<JObject>();
 
             var doc = new HtmlWeb().Load(urlPage);
-            var newUrlPage = RipperSchema.GetValue(stepSelect, doc, 0, 0, name);
+            var newUrlPage = RipperSchema.GetValue(stepSelect, doc, 0, 0, name, nameCfg);
 
             //set step
             current += 1;
@@ -114,7 +115,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             if (current == step)
                 return newUrlPage;
 
-            return GetChapterRecursive(actualProcedure, step, current, newUrlPage, name);
+            return GetChapterRecursive(actualProcedure, step, current, newUrlPage, name, nameCfg);
         }
 
         public static byte[] GetImagePage(string urlPage, int page, ChapterDTO chapter)
@@ -143,6 +144,86 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     return null;
                 }
             }
+        }
+
+        public static List<GenericUrl> GetBookUrl(JObject schema, string name)
+        {
+            _logger.Info($"Start download list book, search: {name}");
+
+            List<GenericUrl> listUrlBook = new();
+
+            HtmlDocument doc;
+
+            string url, prefixPage=null, prefixSearch, imageUrl = null, urlPage = null, nameBook = null;
+            var docBook = new HtmlDocument();
+
+            var page = 1;
+            while (true)
+            {
+                try
+                {
+                    url = schema.GetValue("url_search").ToString();
+                    prefixSearch = schema.GetValue("prefixSearch").ToString();
+
+                    if(schema.ContainsKey("prefixPage"))
+                        prefixPage = schema.GetValue("prefixPage").ToString();
+
+                    var isPage = schema.GetValue("page").ToObject<bool>();
+
+                    if(isPage && prefixPage != null)
+                        url = $"{url}{prefixSearch}={name}&{prefixPage}={page}";
+                    else
+                        url = $"{url}{prefixSearch}={name}";
+
+                    doc = new HtmlWeb().Load(url);
+
+
+                    var collection = schema.GetValue("collection").ToObject<JObject>();
+
+                    var listBook = RipperSchema.GetValue(collection, doc);
+
+                    var description = schema.GetValue("description").ToObject<JObject>();
+
+                    foreach (var manga in listBook)
+                    {
+                        docBook.LoadHtml(manga.InnerHtml);
+
+                        //get image cover
+                        var imageUrlSchema = description.GetValue("imageUrl").ToObject<JObject>();
+                        imageUrl = RipperSchema.GetValue(imageUrlSchema, docBook);
+
+                        //url page
+                        var urlPageSchema = description.GetValue("urlPage").ToObject<JObject>();
+                        urlPage = RipperSchema.GetValue(urlPageSchema, docBook);
+
+                        //name
+                        var nameBookSchema = description.GetValue("name").ToObject<JObject>();
+                        nameBook = RipperSchema.GetValue(nameBookSchema, docBook);
+
+                        listUrlBook.Add(new GenericUrl
+                        {
+                            Name = RipperSchema.RemoveSpecialCharacters(nameBook),
+                            Url = urlPage,
+                            UrlImage = imageUrl,
+                            TypeView = "book"
+                        });
+                    }
+
+                    if (!isPage)
+                        break;
+                }
+                catch
+                {
+                    //not found other pages
+                    break;
+                }
+
+                page++;
+            }
+
+            _logger.Info($"End download list book, search: {name}");
+
+            return listUrlBook;
         }
     }
 }

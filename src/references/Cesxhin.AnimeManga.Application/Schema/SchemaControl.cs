@@ -68,7 +68,7 @@ namespace Cesxhin.AnimeManga.Application.Schema
 
                 checkArray.Add(selectSchema.ContainsKey("name") && selectSchema.GetValue("name").Type == JTokenType.String);
                 checkArray.Add(selectSchema.ContainsKey("type") && selectSchema.GetValue("type").Type == JTokenType.String);
-                checkArray.Add(selectSchema.ContainsKey("url_search") && selectSchema.GetValue("url_search").Type == JTokenType.String);
+                checkArray.Add(selectSchema.ContainsKey("search") && selectSchema.GetValue("search").Type == JTokenType.Object);
                 checkArray.Add(selectSchema.ContainsKey("description") && selectSchema.GetValue("description").Type == JTokenType.Object);
                 checkArray.Add(selectSchema.ContainsKey(selectSchema.GetValue("type").ToString()) && selectSchema.GetValue(selectSchema.GetValue("type").ToString()).Type == JTokenType.Object);
 

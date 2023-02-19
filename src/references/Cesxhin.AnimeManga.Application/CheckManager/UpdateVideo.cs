@@ -13,7 +13,7 @@ using System.IO;
 
 namespace Cesxhin.AnimeManga.Application.CheckManager
 {
-    public class UpdateAnime : IUpdate
+    public class UpdateVideo : IUpdate
     {
         //interface
         private readonly IBus _publishEndpoint;
@@ -23,67 +23,76 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         //env
         private readonly string _folder = Environment.GetEnvironmentVariable("BASE_PATH") ?? "/";
+        private readonly JObject schemas = JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
 
         //Instance Parallel
         private readonly ParallelManager<object> parallel = new();
 
         //Istance Api
-        private readonly Api<JObject> animeApi = new();
+        private readonly Api<GenericVideoDTO> videoApi = new();
         private readonly Api<EpisodeDTO> episodeApi = new();
         private readonly Api<EpisodeRegisterDTO> episodeRegisterApi = new();
 
         //download api
-        private List<JObject> listAnime = null;
+        private List<GenericVideoDTO> listVideo = null;
 
-        public UpdateAnime(IBus publicEndpoint)
+        public UpdateVideo(IBus publicEndpoint)
         {
             _publishEndpoint = publicEndpoint;
         }
 
         public void ExecuteUpdate()
         {
-            /*
-            _logger.Info($"Start update anime");
-
-            try
+            _logger.Info($"Start update video");
+            foreach (var item in schemas)
             {
-                listAnime = animeApi.GetMore("/anime/all").GetAwaiter().GetResult();
-            }
-            catch (ApiNotFoundException ex)
-            {
-                _logger.Error($"Not found get all, details error: {ex.Message}");
-            }
-            catch (ApiGenericException ex)
-            {
-                _logger.Fatal($"Error generic get all, details error: {ex.Message}");
-            }
-
-            //if exists listAnime
-            if (listAnime != null)
-            {
-                var tasks = new List<Func<object>>();
-                //step one check file
-                foreach (var anime in listAnime)
+                var schema = schemas.GetValue(item.Key).ToObject<JObject>();
+                if (schema.GetValue("type").ToString() == "video")
                 {
-
-                    //foreach episodes
-                    foreach (var episode in anime.Episodes)
+                    try
                     {
-                        tasks.Add(new Func<object>(() => CheckEpisode(anime, episode, episodeApi, episodeRegisterApi)));
+                        var query = new Dictionary<string, string>()
+                        {
+                            ["nameCfg"] = item.Key
+                        };
+
+                        listVideo = videoApi.GetMore("/video/all", query).GetAwaiter().GetResult();
+                    }
+                    catch (ApiNotFoundException ex)
+                    {
+                        _logger.Error($"Not found get all, details error: {ex.Message}");
+                    }
+                    catch (ApiGenericException ex)
+                    {
+                        _logger.Fatal($"Error generic get all, details error: {ex.Message}");
+                    }
+
+                    //if exists listAnime
+                    if (listVideo != null)
+                    {
+                        var tasks = new List<Func<object>>();
+                        //step one check file
+                        foreach (var video in listVideo)
+                        {
+                            //foreach episodes
+                            foreach (var episode in video.Episodes)
+                            {
+                                tasks.Add(new Func<object>(() => CheckEpisode(video, episode, episodeApi, episodeRegisterApi)));
+                            }
+                        }
+                        parallel.AddTasks(tasks);
+                        parallel.Start();
+                        parallel.WhenCompleted();
+                        parallel.ClearList();
                     }
                 }
-                parallel.AddTasks(tasks);
-                parallel.Start();
-                parallel.WhenCompleted();
-                parallel.ClearList();
-            }*/
-
+            }
             _logger.Info($"End update anime");
         }
 
-        private object CheckEpisode(JObject anime, EpisodeDTO episode, Api<EpisodeDTO> episodeApi, Api<EpisodeRegisterDTO> episodeRegisterApi)
+        private object CheckEpisode(GenericVideoDTO video, EpisodeDTO episode, Api<EpisodeDTO> episodeApi, Api<EpisodeRegisterDTO> episodeRegisterApi)
         {
-            /* var episodeRegister = anime.EpisodeRegister.Find(e => e.EpisodeId == episode.ID);
+            var episodeRegister = video.EpisodesRegister.Find(e => e.EpisodeId == episode.ID);
             if (episodeRegister == null)
             {
                 _logger.Warn($"not found episodeRegister by episode id: {episode.ID}");
@@ -95,7 +104,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
             //check integry file
             if (episode.StateDownload == null || episode.StateDownload == "failed" || (episode.StateDownload == "completed" && episodeRegister.EpisodeHash == null))
             {
-                ConfirmStartDownloadAnime(episode, episodeApi);
+                ConfirmStartDownload(episode, episodeApi);
             }
             else if (!File.Exists(episodeRegister.EpisodePath) && episode.StateDownload == "completed")
             {
@@ -138,13 +147,13 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
                 //if not found file
                 if (found == false)
-                    ConfirmStartDownloadAnime(episode, episodeApi);
-            }*/
+                    ConfirmStartDownload(episode, episodeApi);
+            }
 
             return null;
         }
 
-        private async void ConfirmStartDownloadAnime(EpisodeDTO episode, Api<EpisodeDTO> episodeApi)
+        private async void ConfirmStartDownload(EpisodeDTO episode, Api<EpisodeDTO> episodeApi)
         {
             //set pending to 
             episode.StateDownload = "pending";
@@ -152,7 +161,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
             try
             {
                 //set change status
-                await episodeApi.PutOne("/anime/statusDownload", episode);
+                await episodeApi.PutOne("/video/statusDownload", episode);
 
                 await _publishEndpoint.Publish(episode);
                 _logger.Info($"this file ({episode.VideoId} episode: {episode.NumberEpisodeCurrent}) does not exists, sending message to DownloadService");

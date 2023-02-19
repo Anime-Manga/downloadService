@@ -5,6 +5,7 @@ using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using MassTransit;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using System.IO;
 
 namespace Cesxhin.AnimeManga.Application.CheckManager
 {
-    public class UpdateManga : IUpdate
+    public class UpdateBook : IUpdate
     {
         //interface
         private readonly IBus _publishEndpoint;
@@ -22,19 +23,20 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         //env
         private readonly string _folder = Environment.GetEnvironmentVariable("BASE_PATH") ?? "/";
+        private readonly JObject schemas =  JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
 
         //Instance Parallel
         private readonly ParallelManager<object> parallel = new();
 
         //Istance Api
-        private readonly Api<GenericMangaDTO> mangaApi = new();
+        private readonly Api<GenericMangaDTO> bookApi = new();
         private readonly Api<ChapterDTO> chapterApi = new();
         private readonly Api<ChapterRegisterDTO> chapterRegisterApi = new();
 
         //download api
-        private List<GenericMangaDTO> listManga = null;
+        private List<GenericMangaDTO> listBook = null;
 
-        public UpdateManga(IBus publicEndpoint)
+        public UpdateBook(IBus publicEndpoint)
         {
             _publishEndpoint = publicEndpoint;
         }
@@ -43,45 +45,58 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
         {
             _logger.Info($"Start update manga");
 
-            try
+            foreach (var item in schemas)
             {
-                listManga = mangaApi.GetMore("/manga/all").GetAwaiter().GetResult();
-            }
-            catch (ApiNotFoundException ex)
-            {
-                _logger.Error($"Not found get all, details error: {ex.Message}");
-            }
-            catch (ApiGenericException ex)
-            {
-                _logger.Fatal($"Error generic get all, details error: {ex.Message}");
-            }
-
-            //if exists listManga
-            if (listManga != null)
-            {
-                var tasks = new List<Func<object>>();
-                //step one check file
-                foreach (var manga in listManga)
+                var schema = schemas.GetValue(item.Key).ToObject<JObject>();
+                if (schema.GetValue("type").ToString() == "book")
                 {
-
-                    //foreach chapters
-                    foreach (var chapter in manga.Chapters)
+                    try
                     {
-                        tasks.Add(new Func<object>(() => Checkchapter(manga, chapter, chapterApi, chapterRegisterApi)));
+                        var query = new Dictionary<string, string>()
+                        {
+                            ["nameCfg"] = item.Key
+                        };
+
+                        listBook = bookApi.GetMore("/book/all", query).GetAwaiter().GetResult();
+                    }
+                    catch (ApiNotFoundException ex)
+                    {
+                        _logger.Error($"Not found get all, details error: {ex.Message}");
+                    }
+                    catch (ApiGenericException ex)
+                    {
+                        _logger.Fatal($"Error generic get all, details error: {ex.Message}");
+                    }
+
+                    //if exists listManga
+                    if (listBook != null && listBook.Count > 0)
+                    {
+                        var tasks = new List<Func<object>>();
+                        //step one check file
+                        foreach (var book in listBook)
+                        {
+
+                            //foreach chapters
+                            foreach (var chapter in book.Chapters)
+                            {
+                                tasks.Add(new Func<object>(() => Checkchapter(book, chapter, chapterApi, chapterRegisterApi)));
+                            }
+                        }
+                        parallel.AddTasks(tasks);
+                        parallel.Start();
+                        parallel.WhenCompleted();
+                        parallel.ClearList();
                     }
                 }
-                parallel.AddTasks(tasks);
-                parallel.Start();
-                parallel.WhenCompleted();
-                parallel.ClearList();
+
             }
 
             _logger.Info($"End update manga");
         }
 
-        private object Checkchapter(GenericMangaDTO manga, ChapterDTO chapter, Api<ChapterDTO> chapterApi, Api<ChapterRegisterDTO> chapterRegisterApi)
+        private object Checkchapter(GenericMangaDTO book, ChapterDTO chapter, Api<ChapterDTO> chapterApi, Api<ChapterRegisterDTO> chapterRegisterApi)
         {
-            var chapterRegister = manga.ChapterRegister.Find(e => e.ChapterId == chapter.ID);
+            var chapterRegister = book.ChapterRegister.Find(e => e.ChapterId == chapter.ID);
             if (chapterRegister == null)
             {
                 _logger.Warn($"not found chapterRegister by chapter id: {chapter.ID}");
@@ -95,7 +110,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 //check integry file
                 if (chapter.StateDownload == null || chapter.StateDownload == "failed" || (chapter.StateDownload == "completed" && chapterRegister.ChapterHash == null))
                 {
-                    ConfirmStartDownloadAnime(chapter, chapterApi);
+                    ConfirmStartDownload(chapter, chapterApi);
                 }
                 else if ((!File.Exists(chapterRegister.ChapterPath[i]) && chapter.StateDownload != "pending"))
                 {
@@ -139,14 +154,14 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
                     //if not found file
                     if (found == false)
-                        ConfirmStartDownloadAnime(chapter, chapterApi);
+                        ConfirmStartDownload(chapter, chapterApi);
                 }
             }
 
             return null;
         }
 
-        private async void ConfirmStartDownloadAnime(ChapterDTO chapter, Api<ChapterDTO> chapterApi)
+        private async void ConfirmStartDownload(ChapterDTO chapter, Api<ChapterDTO> chapterApi)
         {
             //set pending to 
             chapter.StateDownload = "pending";
@@ -154,7 +169,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
             try
             {
                 //set change status
-                await chapterApi.PutOne("/manga/statusDownload", chapter);
+                await chapterApi.PutOne("/book/statusDownload", chapter);
 
                 await _publishEndpoint.Publish(chapter);
                 _logger.Info($"this file ({chapter.NameManga} volume: {chapter.CurrentVolume} chapter: {chapter.CurrentChapter}) does not exists, sending message to DownloadService");

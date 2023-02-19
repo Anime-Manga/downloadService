@@ -14,7 +14,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
         public Task<IActionResult> GetObjectByName(string name);
         public Task<IActionResult> GetObjectById(string id);
         public Task<IActionResult> GetObjectRegisterByObjectId(string id);
-        public Task<IActionResult> GetListSearchByName(string name);
+        public Task<IActionResult> GetListSearchByName(string nameCfg, string name);
 
         //put
         public Task<IActionResult> PutInfo(string nameCfg, I infoClass);

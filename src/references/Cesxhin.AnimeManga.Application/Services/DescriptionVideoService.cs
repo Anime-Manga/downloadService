@@ -65,9 +65,10 @@ namespace Cesxhin.AnimeManga.Application.Services
             return await _descriptionRepository.GetNameAllAsync(nameCfg);
         }
 
-        public async Task<IEnumerable<JObject>> GetNameAllWithAllAsync(string nameCfg)
+        public async Task<IEnumerable<GenericVideoDTO>> GetNameAllWithAllAsync(string nameCfg)
         {
-            List<JObject> listGenericDTO = new();
+            List<GenericVideoDTO> listGenericDTO = new();
+
             List<EpisodeDTO> listEpisodeDTO = new();
             List<EpisodeRegisterDTO> listEpisodeRegisterDTO = new();
 
@@ -99,7 +100,12 @@ namespace Cesxhin.AnimeManga.Application.Services
                     listEpisodeRegisterDTO
                 });
 
-                listGenericDTO.Add(objectAll);
+                listGenericDTO.Add(new GenericVideoDTO()
+                {
+                    Video = description.ToString(),
+                    Episodes = listEpisodeDTO,
+                    EpisodesRegister = listEpisodeRegisterDTO
+                });
 
                 //reset
                 listEpisodeDTO = new();
