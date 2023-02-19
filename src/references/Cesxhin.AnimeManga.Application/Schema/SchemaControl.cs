@@ -58,7 +58,7 @@ namespace Cesxhin.AnimeManga.Application.Schema
         {
             //check valid schema
             Console.WriteLine("[STARTUP] Check schemas");
-            var schemasFile = System.IO.File.ReadAllText(".\\schemas.json");
+            var schemasFile = System.IO.File.ReadAllText("schemas.json");
             var schemas = JObject.Parse(schemasFile);
             var checkArray = new List<bool>();
 
