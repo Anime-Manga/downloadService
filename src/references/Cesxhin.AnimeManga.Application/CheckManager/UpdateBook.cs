@@ -23,7 +23,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         //env
         private readonly string _folder = Environment.GetEnvironmentVariable("BASE_PATH") ?? "/";
-        private readonly JObject schemas =  JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
+        private readonly JObject schemas = JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
 
         //Instance Parallel
         private readonly ParallelManager<object> parallel = new();
@@ -103,7 +103,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                 return null;
             }
 
-            for(int i=0; i<chapterRegister.ChapterPath.Length; i++)
+            for (int i = 0; i < chapterRegister.ChapterPath.Length; i++)
             {
                 _logger.Debug($"check {chapterRegister.ChapterPath[i]}");
 

@@ -18,7 +18,7 @@ namespace Cesxhin.AnimeManga.Application.Generic
 
                     return BytesToStr(hash.ComputeHash(content));
                 }
-                catch(IOException)
+                catch (IOException)
                 {
                     return null;
                 }

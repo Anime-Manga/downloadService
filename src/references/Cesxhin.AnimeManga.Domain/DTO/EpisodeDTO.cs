@@ -25,6 +25,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
         public string PlaylistSources { get; set; }
         public int startNumberBuffer { get; set; } = 0;
         public int endNumberBuffer { get; set; }
+        public string nameCfg { get; set; }
 
         //convert Episode to EpisodeDTO
         public static EpisodeDTO EpisodeToEpisodeDTO(Episode episode)
@@ -43,7 +44,9 @@ namespace Cesxhin.AnimeManga.Domain.DTO
                 Resolution = episode.Resolution,
                 PlaylistSources = episode.PlaylistSources,
                 startNumberBuffer = episode.startNumberBuffer,
-                endNumberBuffer = episode.endNumberBuffer
+                endNumberBuffer = episode.endNumberBuffer,
+                nameCfg = episode.nameCfg
+
             };
         }
     }

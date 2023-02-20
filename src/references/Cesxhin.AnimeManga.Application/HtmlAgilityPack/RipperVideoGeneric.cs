@@ -45,13 +45,13 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return descriptionDB;
         }
 
-        public static dynamic GetEpisodesRecursive(JObject actualProcedure, int step, int current, string urlPage, int numberSeason, int numberEpisode, string name)
+        public static dynamic GetEpisodesRecursive(JObject actualProcedure, int step, int current, string urlPage, int numberSeason, int numberEpisode, string name, string nameCfg)
         {
             var stepSelect = actualProcedure[current.ToString()].ToObject<JObject>();
 
             //array for alternative paths
             var doc = new HtmlWeb().Load(urlPage);
-            var newUrlPage = RipperSchema.GetValue(stepSelect, doc, numberSeason, numberEpisode, name);
+            var newUrlPage = RipperSchema.GetValue(stepSelect, doc, numberSeason, numberEpisode, name, nameCfg);
 
             //set step
             current += 1;
@@ -59,10 +59,10 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             if (current == step)
                 return newUrlPage;
 
-            return GetEpisodesRecursive(actualProcedure, step, current, newUrlPage, numberSeason, numberEpisode, name);
+            return GetEpisodesRecursive(actualProcedure, step, current, newUrlPage, numberSeason, numberEpisode, name, nameCfg);
         }
 
-        public static List<EpisodeDTO> GetEpisodes(JObject schema, string urlPage, string name)
+        public static List<EpisodeDTO> GetEpisodes(JObject schema, string urlPage, string name, string nameCfg)
         {
             //set variable
             List<EpisodeDTO> episodes = new();
@@ -91,7 +91,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     var numberSeasonThread = numberSeason;
                     var numberEpisodeThread = numberEpisode;
 
-                    tasks.Add(new Func<EpisodeDTO>(() => { return GetEpisodesRecursive(procedure, procedure.Count, 0, itemThread, numberSeasonThread, numberEpisodeThread, name); }));
+                    tasks.Add(new Func<EpisodeDTO>(() => { return GetEpisodesRecursive(procedure, procedure.Count, 0, itemThread, numberSeasonThread, numberEpisodeThread, name, nameCfg); }));
                     numberEpisode += 1;
                 }
 
@@ -105,7 +105,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             {
                 foreach (var item in resultCollection)
                 {
-                    resultVideos.Add(GetEpisodesRecursive(procedure, procedure.Count, 0, item, numberSeason, numberEpisode, name));
+                    resultVideos.Add(GetEpisodesRecursive(procedure, procedure.Count, 0, item, numberSeason, numberEpisode, name, nameCfg));
                     numberEpisode += 1;
                 }
             }

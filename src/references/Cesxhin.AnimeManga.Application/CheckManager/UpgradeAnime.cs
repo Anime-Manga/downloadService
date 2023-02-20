@@ -1,7 +1,5 @@
 ﻿using Cesxhin.AnimeManga.Application.CheckManager.Interfaces;
-using Cesxhin.AnimeManga.Application.Exceptions;
 using Cesxhin.AnimeManga.Application.Generic;
-using Cesxhin.AnimeManga.Application.HtmlAgilityPack;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.DTO;
 using MassTransit;
@@ -9,8 +7,6 @@ using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace Cesxhin.AnimeManga.Application.CheckManager
 {

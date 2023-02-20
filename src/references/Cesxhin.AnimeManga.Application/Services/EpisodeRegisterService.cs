@@ -21,7 +21,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         public async Task<EpisodeRegisterDTO> GetObjectRegisterByObjectId(string id)
         {
             var listEpisodesRegisters = await _episodeRegisterRepository.GetObjectsRegisterByObjectId(id);
-            foreach(var episodeRegister in listEpisodesRegisters)
+            foreach (var episodeRegister in listEpisodesRegisters)
             {
                 return EpisodeRegisterDTO.EpisodeRegisterToEpisodeRegisterDTO(episodeRegister);
             }

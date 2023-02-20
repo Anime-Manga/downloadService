@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Schema
 {
@@ -39,7 +36,8 @@ namespace Cesxhin.AnimeManga.Application.Schema
 
         private static bool checkType(string type)
         {
-            switch (type) {
+            switch (type)
+            {
                 case "string":
                 case "image":
                 case "array":

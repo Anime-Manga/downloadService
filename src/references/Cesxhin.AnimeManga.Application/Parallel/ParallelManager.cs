@@ -3,7 +3,6 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Parallel
@@ -39,7 +38,7 @@ namespace Cesxhin.AnimeManga.Application.Parallel
                 {
                     var task = queue.First();
 
-                    if(task != null)
+                    if (task != null)
                     {
                         tasks.Add(Task.Run(task));
                         capacity++;
@@ -91,7 +90,7 @@ namespace Cesxhin.AnimeManga.Application.Parallel
 
         public bool CheckFinish()
         {
-            if(tasks.Count == 0 && queue.Count == 0)
+            if (tasks.Count == 0 && queue.Count == 0)
                 return true;
             else
                 return false;
@@ -106,7 +105,7 @@ namespace Cesxhin.AnimeManga.Application.Parallel
         {
             if (list == null)
                 return 0;
-            return (list.Count * 100)/(list.Count + tasks.Count + queue.Count); //43 : 100 = 4 : x
+            return (list.Count * 100) / (list.Count + tasks.Count + queue.Count); //43 : 100 = 4 : x
         }
 
         public List<T> GetResult()

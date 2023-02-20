@@ -6,7 +6,6 @@ using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
@@ -122,7 +121,7 @@ namespace Cesxhin.AnimeManga.Application.Services
 
         public async Task<JObject> InsertNameAsync(string nameCfg, JObject description)
         {
-            if(description.ContainsKey("name_id"))
+            if (description.ContainsKey("name_id"))
             {
                 var find = await _descriptionRepository.GetNameByNameAsync(nameCfg, description.GetValue("name_id").ToString());
 
@@ -130,7 +129,8 @@ namespace Cesxhin.AnimeManga.Application.Services
                     return await _descriptionRepository.InsertNameAsync(nameCfg, description);
                 else
                     return null;
-            }else
+            }
+            else
             {
                 _logger.Error("Not found field 'name_id'");
                 throw new Exception();

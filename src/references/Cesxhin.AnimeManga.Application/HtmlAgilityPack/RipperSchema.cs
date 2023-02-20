@@ -21,7 +21,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         public static dynamic GetValue(JObject schema, HtmlDocument doc, int numberSeason = 0, int numberEpisode = 0, string name = null, string nameCfg = null)
         {
             var paths = schema.GetValue("path").ToObject<IEnumerable<string>>();
-            int i = 0, childNodesSelect=0;
+            int i = 0, childNodesSelect = 0;
             var types = schema.GetValue("type").ToObject<IEnumerable<string>>().ToArray();
 
             //check nodes
@@ -41,7 +41,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         .First()
                         .ChildNodes[childNodesSelect]
                         .InnerHtml.Trim();
-                    }else if (types[i] == "number")
+                    }
+                    else if (types[i] == "number")
                     {
                         var result = doc.DocumentNode
                         .SelectNodes(path)
@@ -49,8 +50,9 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         .ChildNodes[childNodesSelect]
                         .InnerHtml;
 
-                        if (schema.ContainsKey("removeWords")){
-                           var words = schema.GetValue("removeWords").ToObject<IEnumerable<string>>();
+                        if (schema.ContainsKey("removeWords"))
+                        {
+                            var words = schema.GetValue("removeWords").ToObject<IEnumerable<string>>();
 
                             foreach (var word in words)
                             {
@@ -93,10 +95,18 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     {
                         var attributes = (string)schema.GetValue("attributes");
 
-                        return doc.DocumentNode
-                            .SelectNodes(path)
+                        if (schema.ContainsKey("numberPage"))
+                        {
+                            return doc.DocumentNode
+                            .SelectNodes(path.Replace("{numberPage}", (string)schema.GetValue("numberPage")))
                             .First()
                             .Attributes[attributes].Value;
+                        }
+
+                        return doc.DocumentNode
+                        .SelectNodes(path)
+                        .First()
+                        .Attributes[attributes].Value;
                     }
                     else if (types[i] == "image") //Attributes.Value
                     {
@@ -131,7 +141,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                             .First()
                             .Attributes["src"].Value;
 
-                        return DownloadMetadataEpisode(numberSeason, numberEpisode, url, name, true);
+                        return DownloadMetadataEpisode(numberSeason, numberEpisode, url, name, true, nameCfg);
                     }
                     else if (types[i] == "video/m3u8/script")
                     {
@@ -151,13 +161,13 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
                         var url = script.Substring(0, end);
 
-                        return DownloadMetadataEpisode(numberSeason, numberEpisode, url, name, false);
+                        return DownloadMetadataEpisode(numberSeason, numberEpisode, url, name, false, nameCfg);
                     }
                     else if (types[i] == "array")
                     {
                         var attributes = (string)schema.GetValue("attributes");
 
-                        if(attributes == null)
+                        if (attributes == null)
                         {
                             return doc.DocumentNode
                                 .SelectNodes(path)
@@ -175,7 +185,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                         }
 
                         return resultArray;
-                    }else if (types[i] == "book/link")
+                    }
+                    else if (types[i] == "book/link")
                     {
                         var attributes = (string)schema.GetValue("attributes");
 
@@ -184,9 +195,11 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                             .First()
                             .Attributes[attributes].Value;
 
-                        if (schema.ContainsKey("addUrl")){
+                        if (schema.ContainsKey("addUrl"))
+                        {
                             var addUrl = (string)schema.GetValue("addUrl");
-                            if (!url.Contains(addUrl)){
+                            if (!url.Contains(addUrl))
+                            {
                                 if (url.LastIndexOf('/') == (url.Trim().Length - 1))
                                     url = $"{url.Substring(0, url.LastIndexOf('/'))}/{addUrl}";
                                 else
@@ -198,7 +211,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     }
                     break;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     _logger.Warn(e);
 
@@ -206,7 +219,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 }
                 finally
                 {
-                    if((i + 1) < types.Length)
+                    if ((i + 1) < types.Length)
                         i++;
                 }
             }
@@ -274,7 +287,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             return null;
         }
 
-        private static EpisodeDTO DownloadMetadataEpisode(int numberSeason, int numberEpisode, string urlVideo, string name, bool mp4)
+        private static EpisodeDTO DownloadMetadataEpisode(int numberSeason, int numberEpisode, string urlVideo, string name, bool mp4, string nameCfg)
         {
             PlayerUrl playerUrl = null;
 
@@ -321,7 +334,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     PlaylistSources = playerUrl.PlaylistSources,
                     Resolution = playerUrl.Resolution,
                     NumberSeasonCurrent = numberSeason,
-                    endNumberBuffer = playerUrl.endNumberBuffer
+                    endNumberBuffer = playerUrl.endNumberBuffer,
+                    nameCfg = nameCfg 
                 };
             }
             else
@@ -332,7 +346,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     VideoId = name,
                     UrlVideo = urlVideo,
                     NumberEpisodeCurrent = numberEpisode,
-                    NumberSeasonCurrent = numberSeason
+                    NumberSeasonCurrent = numberSeason,
+                    nameCfg = nameCfg
 
                 };
             }

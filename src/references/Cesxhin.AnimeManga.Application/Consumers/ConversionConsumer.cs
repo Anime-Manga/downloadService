@@ -17,7 +17,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
     {
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
-        
+
         //temp
         private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP");
         public Task Consume(ConsumeContext<ConversionDTO> context)
@@ -43,7 +43,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 catch (ApiGenericException ex)
                 {
                     _logger.Fatal($"Impossible error generic get episodeRegister, details error: {ex.Message}");
-                
+
                 }
 
                 //episodeRegister
@@ -141,7 +141,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 return Task.CompletedTask;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error($"Error generic, details {ex.Message}");
             }

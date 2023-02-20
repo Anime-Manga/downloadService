@@ -7,9 +7,7 @@ using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Runtime.Remoting;
 
 namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 {
@@ -115,15 +113,16 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         {
             JObject _schema = JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
             var schema = _schema.GetValue(chapter.NameCfg).ToObject<JObject>();
-            var download = schema.GetValue("download").ToObject<JObject>();
+            var downloadSchema = schema.GetValue("book").ToObject<JObject>().GetValue("download").ToObject<JObject>();
 
-            var path = download.GetValue("path").ToString();
-
-            download["path"] = path.Replace("{numberPage}", page.ToString());
+            if(downloadSchema.ContainsKey("startZero") && downloadSchema.GetValue("startZero").ToObject<bool>() == true)
+                downloadSchema["numberPage"] = page + 1;
+            else
+                downloadSchema["numberPage"] = page;
 
             var doc = new HtmlWeb().Load(urlPage);
 
-            var imgUrl = RipperSchema.GetValue(download, doc);
+            var imgUrl = RipperSchema.GetValue(downloadSchema, doc);
 
             using (var webClient = new WebClient())
             {
@@ -147,7 +146,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
 
             HtmlDocument doc;
 
-            string url, prefixPage=null, prefixSearch, imageUrl = null, urlPage = null, nameBook = null;
+            string url, prefixPage = null, prefixSearch, imageUrl = null, urlPage = null, nameBook = null;
             var docBook = new HtmlDocument();
 
             var page = 1;
@@ -158,12 +157,12 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     url = schema.GetValue("url_search").ToString();
                     prefixSearch = schema.GetValue("prefixSearch").ToString();
 
-                    if(schema.ContainsKey("prefixPage"))
+                    if (schema.ContainsKey("prefixPage"))
                         prefixPage = schema.GetValue("prefixPage").ToString();
 
                     var isPage = schema.GetValue("page").ToObject<bool>();
 
-                    if(isPage && prefixPage != null)
+                    if (isPage && prefixPage != null)
                         url = $"{url}{prefixSearch}={name}&{prefixPage}={page}";
                     else
                         url = $"{url}{prefixSearch}={name}";

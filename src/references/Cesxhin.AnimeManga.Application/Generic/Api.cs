@@ -1,12 +1,11 @@
-﻿using System;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
+using Microsoft.AspNetCore.WebUtilities;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Web;
-using Cesxhin.AnimeManga.Application.Exceptions;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace Cesxhin.AnimeManga.Application.Generic
 {
@@ -28,7 +27,10 @@ namespace Cesxhin.AnimeManga.Application.Generic
         {
             using (var client = new HttpClient())
             {
-                var url = QueryHelpers.AddQueryString($"{_protocol}://{_address}:{_port}{path}", query);
+                string url = $"{_protocol}://{_address}:{_port}{path}";
+
+                if (query != null)
+                    url = QueryHelpers.AddQueryString(url, query);
 
                 var resultHttp = await client.GetAsync(url);
                 if (resultHttp.IsSuccessStatusCode)
@@ -97,7 +99,8 @@ namespace Cesxhin.AnimeManga.Application.Generic
                 else if (resultHttp.StatusCode == HttpStatusCode.Conflict)
                 {
                     throw new ApiNotFoundException(resultHttp.Content.ToString());
-                }else
+                }
+                else
                 {
                     throw new ApiConflictException(resultHttp.Content.ToString());
                 }

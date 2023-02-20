@@ -1,6 +1,5 @@
 ﻿using Cesxhin.AnimeManga.Domain.DTO;
 using RepoDb.Attributes;
-using System;
 
 namespace Cesxhin.AnimeManga.Domain.Models
 {

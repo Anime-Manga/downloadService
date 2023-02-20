@@ -53,6 +53,9 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("endnumberframe")]
         public int endNumberBuffer { get; set; }
 
+        [Map("namecfg")]
+        public string nameCfg { get; set; }
+
         //convert EpisodeDTO to Episode
         public Episode EpisodeDTOToEpisode(EpisodeDTO episode)
         {
@@ -70,7 +73,8 @@ namespace Cesxhin.AnimeManga.Domain.Models
                 Resolution = episode.Resolution,
                 PlaylistSources = episode.PlaylistSources,
                 Playlist = episode.Playlist,
-                BaseUrl = episode.BaseUrl
+                BaseUrl = episode.BaseUrl,
+                nameCfg = episode.nameCfg
             };
         }
     }

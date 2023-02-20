@@ -21,7 +21,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         public async Task<EpisodeDTO> GetObjectByIDAsync(string id)
         {
             var listEpisode = await _episodeRepository.GetObjectsByIDAsync(id);
-            foreach(var episode in listEpisode)
+            foreach (var episode in listEpisode)
             {
                 return EpisodeDTO.EpisodeToEpisodeDTO(episode);
             }
@@ -37,12 +37,12 @@ namespace Cesxhin.AnimeManga.Application.Services
             if (listEpisode == null)
                 return null;
 
-            foreach(var episode in listEpisode)
+            foreach (var episode in listEpisode)
             {
                 episodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episode));
             }
 
-            if(episodes.Count <= 0)
+            if (episodes.Count <= 0)
                 return null;
 
             return episodes;
@@ -63,7 +63,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         public async Task<List<EpisodeDTO>> InsertObjectsAsync(List<EpisodeDTO> episodes)
         {
             List<EpisodeDTO> resultEpisodes = new();
-            foreach(var episode in episodes)
+            foreach (var episode in episodes)
             {
                 var episodeResult = await _episodeRepository.InsertObjectAsync(new Episode().EpisodeDTOToEpisode(episode));
                 resultEpisodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episodeResult));

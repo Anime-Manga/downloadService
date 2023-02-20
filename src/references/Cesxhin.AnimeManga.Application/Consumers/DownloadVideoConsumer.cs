@@ -39,7 +39,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             //api
             Api<EpisodeRegisterDTO> episodeRegisterApi = new();
-            Api<JObject> videoApi = new();
+            Api<GenericVideoDTO> videoApi = new();
             Api<EpisodeDTO> episodeApi = new();
 
             EpisodeRegisterDTO episodeRegister = null;
@@ -53,7 +53,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             catch (ApiNotFoundException ex)
             {
                 _logger.Error($"Not found episodeRegister, details error: {ex.Message}");
-            }catch (ApiGenericException ex)
+            }
+            catch (ApiGenericException ex)
             {
                 _logger.Fatal($"Impossible error generic get episodeRegister, details error: {ex.Message}");
             }
@@ -73,15 +74,18 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             }
 
             //check duplication messages
-            if (episodeVerify != null && episodeVerify.StateDownload == "pending" )
+            if (episodeVerify != null && episodeVerify.StateDownload == "pending")
             {
                 //paths
                 var directoryPath = Path.GetDirectoryName(episodeRegister.EpisodePath);
-                var filePathTemp = $"{pathTemp}/{Path.GetFileName(episodeRegister.EpisodePath)}";
+                var filePathTemp = Path.GetFullPath($"{pathTemp}/{Path.GetFileName(episodeRegister.EpisodePath)}");
 
                 //check directory
                 if (!Directory.Exists(directoryPath))
                     Directory.CreateDirectory(directoryPath);
+
+                if (!Directory.Exists(Path.GetDirectoryName(filePathTemp)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePathTemp));
 
                 //check type url
                 if (episode.UrlVideo != null)
@@ -98,7 +102,11 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         _logger.Info("try download: " + episode.UrlVideo);
                         try
                         {
-                            var video = videoApi.GetOne($"/video/name/{episode.VideoId}").GetAwaiter().GetResult();
+                            Dictionary<string, string> query = new()
+                            {
+                                ["nameCfg"] = episode.nameCfg
+                            };
+                            var video = videoApi.GetOne($"/video/name/{episode.VideoId}", query).GetAwaiter().GetResult();
 
                             //setup client
                             //client.Headers.Add("Referer", anime.UrlPage);
@@ -118,7 +126,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             _logger.Fatal($"Error download with url easy, details error: {ex.Message}");
                         }
                     }
-                    
+
                     //get hash and update
                     _logger.Info($"start calculate hash of episode id: {episode.ID}");
                     string hash = Hash.GetHash(episodeRegister.EpisodePath);
@@ -150,7 +158,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     try
                     {
                         Download(episode, filePathTemp, episodeRegister.EpisodePath, context);
-                    }catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         _logger.Fatal($"Error download with url stream, details error: {ex.Message}");
                     }
@@ -420,10 +429,12 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             try
             {
                 episodeApi.PutOne("/video/statusDownload", episode).GetAwaiter().GetResult();
-            }catch (ApiNotFoundException ex)
+            }
+            catch (ApiNotFoundException ex)
             {
                 _logger.Error($"Not found episode id: {episode.ID}, details: {ex.Message}");
-            }catch (ApiGenericException ex)
+            }
+            catch (ApiGenericException ex)
             {
                 _logger.Error($"Error generic api, details: {ex.Message}");
             }

@@ -17,17 +17,17 @@ namespace Cesxhin.AnimeManga.Application.NlogManager
             //webhook
             var webhookUrl = Environment.GetEnvironmentVariable("WEBHOOK_DISCORD_DEBUG") ?? null;
 
-            if(webhookUrl != null)
+            if (webhookUrl != null)
                 discord = new DiscordWebhookClient(webhookUrl);
         }
 
-        private string DefaultMessage(LogLevel level,  string msg)
+        private string DefaultMessage(LogLevel level, string msg)
         {
             string message = "";
             message += DateTime.Now.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") + " | ";
 
             //set type error
-            switch(level.Name.ToLower())
+            switch (level.Name.ToLower())
             {
                 case "info":
                     message += "🔵 info: ";

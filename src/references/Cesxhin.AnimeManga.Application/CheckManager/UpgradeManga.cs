@@ -1,10 +1,8 @@
 ﻿using Cesxhin.AnimeManga.Application.CheckManager.Interfaces;
 using Cesxhin.AnimeManga.Application.Exceptions;
 using Cesxhin.AnimeManga.Application.Generic;
-using Cesxhin.AnimeManga.Application.HtmlAgilityPack;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.DTO;
-using HtmlAgilityPack;
 using MassTransit;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -113,7 +111,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                     foreach (var chapter in listChaptersAdd)
                     {
                         //use path how others episodesRegisters
-                        for(int i=0; i<=chapter.NumberMaxImage; i++)
+                        for (int i = 0; i <= chapter.NumberMaxImage; i++)
                         {
                             if (pathDefault != null)
                             {

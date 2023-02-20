@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Domain.DTO
 {
-    public  class GenericUrlDTO
+    public class GenericUrlDTO
     {
         public string Name { get; set; }
         public string UrlPageDownload { get; set; }
