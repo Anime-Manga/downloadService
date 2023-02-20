@@ -1,13 +1,13 @@
+using Cesxhin.AnimeManga.Application.Consumers;
+using Cesxhin.AnimeManga.Application.CronJob;
+using Cesxhin.AnimeManga.Application.Generic;
+using Cesxhin.AnimeManga.Application.Schema;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MassTransit;
-using Cesxhin.AnimeManga.Application.Consumers;
-using System;
 using NLog;
-using Cesxhin.AnimeManga.Application.Generic;
 using Quartz;
-using Cesxhin.AnimeManga.Application.CronJob;
-using Cesxhin.AnimeManga.Application.Schema;
+using System;
 
 namespace Cesxhin.AnimeManga.DownloadService
 {
@@ -15,9 +15,9 @@ namespace Cesxhin.AnimeManga.DownloadService
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
-
             SchemaControl.Check();
+
+            CreateHostBuilder(args).Build().Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -39,7 +39,8 @@ namespace Cesxhin.AnimeManga.DownloadService
                                     credentials.Password(Environment.GetEnvironmentVariable("PASSWORD_RABBIT") ?? "guest");
                                 });
 
-                            cfg.ReceiveEndpoint("download-video", e => {
+                            cfg.ReceiveEndpoint("download-video", e =>
+                            {
                                 e.Consumer<DownloadVideoConsumer>(cc =>
                                 {
                                     string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
@@ -48,7 +49,8 @@ namespace Cesxhin.AnimeManga.DownloadService
                                 });
                             });
 
-                            cfg.ReceiveEndpoint("download-book", e => {
+                            cfg.ReceiveEndpoint("download-book", e =>
+                            {
                                 e.Consumer<DownloadBookConsumer>(cc =>
                                 {
                                     string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
