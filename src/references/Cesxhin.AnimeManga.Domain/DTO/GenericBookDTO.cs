@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Domain.DTO
 {
-    public class GenericMangaDTO
+    public class GenericBookDTO
     {
         //Manga
         public string Book { get; set; }

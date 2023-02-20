@@ -29,12 +29,12 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
         private readonly ParallelManager<object> parallel = new();
 
         //Istance Api
-        private readonly Api<GenericMangaDTO> bookApi = new();
+        private readonly Api<GenericBookDTO> bookApi = new();
         private readonly Api<ChapterDTO> chapterApi = new();
         private readonly Api<ChapterRegisterDTO> chapterRegisterApi = new();
 
         //download api
-        private List<GenericMangaDTO> listBook = null;
+        private List<GenericBookDTO> listBook = null;
 
         public UpdateBook(IBus publicEndpoint)
         {
@@ -43,7 +43,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         public void ExecuteUpdate()
         {
-            _logger.Info($"Start update manga");
+            _logger.Info($"Start update book");
 
             foreach (var item in schemas)
             {
@@ -91,10 +91,10 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
             }
 
-            _logger.Info($"End update manga");
+            _logger.Info($"End update book");
         }
 
-        private object Checkchapter(GenericMangaDTO book, ChapterDTO chapter, Api<ChapterDTO> chapterApi, Api<ChapterRegisterDTO> chapterRegisterApi)
+        private object Checkchapter(GenericBookDTO book, ChapterDTO chapter, Api<ChapterDTO> chapterApi, Api<ChapterRegisterDTO> chapterRegisterApi)
         {
             var chapterRegister = book.ChapterRegister.Find(e => e.ChapterId == chapter.ID);
             if (chapterRegister == null)

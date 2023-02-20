@@ -64,9 +64,9 @@ namespace Cesxhin.AnimeManga.Application.Services
             return await _descriptionRepository.GetNameAllAsync(nameCfg);
         }
 
-        public async Task<IEnumerable<GenericMangaDTO>> GetNameAllWithAllAsync(string nameCfg)
+        public async Task<IEnumerable<GenericBookDTO>> GetNameAllWithAllAsync(string nameCfg)
         {
-            List<GenericMangaDTO> listGenericDTO = new();
+            List<GenericBookDTO> listGenericDTO = new();
 
             List<ChapterDTO> listEpisodeDTO = new();
             List<ChapterRegisterDTO> listEpisodeRegisterDTO = new();
@@ -92,7 +92,7 @@ namespace Cesxhin.AnimeManga.Application.Services
                     listEpisodeDTO.Add(ChapterDTO.ChapterToChapterDTO(episode));
                 }
 
-                listGenericDTO.Add(new GenericMangaDTO
+                listGenericDTO.Add(new GenericBookDTO
                 {
                     Book = description.ToString(),
                     Chapters = listEpisodeDTO,
