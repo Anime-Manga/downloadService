@@ -19,7 +19,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         private static readonly ParallelManager<EpisodeDTO> parallel = new();
         private static readonly ParallelManager<string> _parallel = new();
 
-        public static JObject GetDescriptionVideo(JObject schema, string urlPage)
+        public static JObject GetDescriptionVideo(JObject schema, string urlPage, string nameCfg)
         {
             _logger.Info($"Start download page video: {urlPage}");
 
@@ -37,6 +37,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 descriptionDB.Add(nameField.Key, result);
             }
 
+            descriptionDB["nameCfg"] = nameCfg;
+            descriptionDB["type"] = "video";
             descriptionDB["url_page"] = urlPage;
             descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
 

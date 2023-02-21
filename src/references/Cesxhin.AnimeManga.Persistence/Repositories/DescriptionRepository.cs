@@ -75,7 +75,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             {
                 var database = client.GetDatabase(_nameDatabase);
                 var collection = database.GetCollection<BsonDocument>("description_" + getNameTable(nameCfg));
-                var list = collection.Find(new BsonDocument()).ToList();
+                var list = collection.Find(Builders<BsonDocument>.Filter.Empty).ToList();
 
                 if (list == null)
                     return null;

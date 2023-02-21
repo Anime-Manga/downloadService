@@ -19,7 +19,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
         //parallel
         private static readonly ParallelManager<ChapterDTO> parallel = new();
 
-        public static JObject GetDescriptionBook(JObject schema, string urlPage)
+        public static JObject GetDescriptionBook(JObject schema, string urlPage, string nameCfg)
         {
             _logger.Info($"Start download page book: {urlPage}");
 
@@ -37,6 +37,8 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                 descriptionDB.Add(nameField.Key, result);
             }
 
+            descriptionDB["nameCfg"] = nameCfg;
+            descriptionDB["type"] = "book";
             descriptionDB["url_page"] = urlPage;
             descriptionDB["name_id"] = RipperSchema.RemoveSpecialCharacters(descriptionDB.GetValue("name_id").ToString());
 
