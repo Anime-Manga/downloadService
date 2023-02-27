@@ -78,6 +78,25 @@ namespace Cesxhin.AnimeManga.Application.Services
             return EpisodeDTO.EpisodeToEpisodeDTO(episodeResult);
         }
 
+        public async Task<List<EpisodeDTO>> ResetStatusMultipleDownloadObjectByIdAsync(string name)
+        {
+            var listEpisodes = await _episodeRepository.GetObjectsByNameAsync(name);
+            List<EpisodeDTO> resultEpisodes = new();
+
+            foreach (var episode in listEpisodes)
+            {
+                episode.StateDownload = null;
+                episode.PercentualDownload = 0;
+
+                var result = await _episodeRepository.ResetStatusDownloadObjectByIdAsync(episode);
+
+                if (result != null)
+                    resultEpisodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episode));
+            }
+
+            return resultEpisodes;
+        }
+
         //update PercentualState
         public async Task<EpisodeDTO> UpdateStateDownloadAsync(EpisodeDTO episode)
         {

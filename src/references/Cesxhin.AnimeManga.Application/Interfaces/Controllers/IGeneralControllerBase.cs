@@ -22,7 +22,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
         public Task<IActionResult> PutObjects(List<O> objectsClass);
         public Task<IActionResult> PutObjectsRegisters(List<R> objectsRegistersClass);
         public Task<IActionResult> UpdateObjectRegister(R objectRegisterClass);
-        public Task<IActionResult> RedownloadObjectByUrlPage(List<O> objectsClass);
+        public Task<IActionResult> RedownloadObjectByUrlPage(string id);
         public Task<IActionResult> DownloadInfoByUrlPage(D objectsClass);
         public Task<IActionResult> PutUpdateStateDownload(O objectClass);
 

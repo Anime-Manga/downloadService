@@ -18,5 +18,6 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Services
 
         //reset
         Task<TObjectDTO> ResetStatusDownloadObjectByIdAsync(TObjectDTO generalObject);
+        Task<List<TObjectDTO>> ResetStatusMultipleDownloadObjectByIdAsync(string name);
     }
 }

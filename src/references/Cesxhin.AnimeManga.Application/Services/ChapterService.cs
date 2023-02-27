@@ -71,7 +71,7 @@ namespace Cesxhin.AnimeManga.Application.Services
             return resultChapters;
         }
 
-        //reset StatusDownload to null
+        //reset manual
         public async Task<ChapterDTO> ResetStatusDownloadObjectByIdAsync(ChapterDTO chapter)
         {
             var rs = await _chapterRepository.ResetStatusDownloadObjectByIdAsync(Chapter.ChapterDTOToChapter(chapter));
@@ -80,6 +80,26 @@ namespace Cesxhin.AnimeManga.Application.Services
                 return null;
 
             return ChapterDTO.ChapterToChapterDTO(rs);
+        }
+
+        //reset automatic
+        public async Task<List<ChapterDTO>> ResetStatusMultipleDownloadObjectByIdAsync(string name)
+        {
+            var listChapters = await _chapterRepository.GetObjectsByNameAsync(name);
+            List<ChapterDTO> resultChapters = new();
+
+            foreach (var chapter in listChapters)
+            {
+                chapter.StateDownload = null;
+                chapter.PercentualDownload = 0;
+
+                var result = await _chapterRepository.ResetStatusDownloadObjectByIdAsync(chapter);
+
+                if(result != null)
+                    resultChapters.Add(ChapterDTO.ChapterToChapterDTO(chapter));
+            }
+
+            return resultChapters;
         }
 
         //update PercentualState
