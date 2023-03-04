@@ -108,15 +108,15 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             var result = parallel.GetResultAndClear();
 
-            if (result.)
+            if (result.Contains("failed"))
             {
-                //send end download
-                episode.StateDownload = "failed";
-                episode.PercentualDownload = 0;
-                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+                //send failed download
+                chapter.StateDownload = "failed";
+                chapter.PercentualDownload = 0;
+                SendStatusDownloadAPIAsync(chapter);
 
-                _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
-                return;
+                _logger.Error($"failed download {chapter.ID} v{chapter.CurrentVolume}-c{chapter.CurrentChapter}");
+                return Task.CompletedTask;
             }
 
             //end download
