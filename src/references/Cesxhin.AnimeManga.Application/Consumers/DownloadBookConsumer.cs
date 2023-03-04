@@ -16,11 +16,14 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 {
     public class DownloadBookConsumer : IConsumer<ChapterDTO>
     {
+        //const
+        const int LIMIT_TIMEOUT = 10;
+
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
         //Instance Parallel
-        private readonly ParallelManager<object> parallel = new();
+        private readonly ParallelManager<string> parallel = new();
 
         //api
         private readonly Api<ChapterDTO> chapterApi = new();
@@ -82,14 +85,14 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 SendStatusDownloadAPIAsync(chapter);
 
                 //set parallel
-                var tasks = new List<Func<object>>();
+                var tasks = new List<Func<string>>();
 
                 //step one check file
                 for (int i = 0; i < chapter.NumberMaxImage; i++)
                 {
                     var currentImage = i;
                     var path = chapterRegister.ChapterPath[currentImage];
-                    tasks.Add(new Func<object>(() => Download(chapter, path, currentImage)));
+                    tasks.Add(new Func<string>(() => Download(chapter, path, currentImage)));
                 }
                 parallel.AddTasks(tasks);
                 parallel.Start();
@@ -101,7 +104,19 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     SendStatusDownloadAPIAsync(chapter);
                     Thread.Sleep(3000);
                 }
-                parallel.ClearList();
+            }
+
+            var result = parallel.GetResultAndClear();
+
+            if (result.)
+            {
+                //send end download
+                episode.StateDownload = "failed";
+                episode.PercentualDownload = 0;
+                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                return;
             }
 
             //end download
@@ -139,7 +154,26 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
         private string Download(ChapterDTO chapter, string path, int currentImage)
         {
-            var imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage, chapter);
+            byte[] imgBytes;
+            int timeout = 0;
+            while (true)
+            {
+                imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage, chapter);
+
+                if (timeout >= LIMIT_TIMEOUT)
+                {
+                    _logger.Error($"Failed download, details: {chapter.UrlPage}");
+                    return "failed";
+                }
+                else if (imgBytes == null)
+                {
+                    _logger.Warn($"The attempts remains: {LIMIT_TIMEOUT - timeout} for {chapter.UrlPage}");
+                    timeout++;
+                }
+                else
+                    break;
+
+            }
 
             File.WriteAllBytes(path, imgBytes);
 

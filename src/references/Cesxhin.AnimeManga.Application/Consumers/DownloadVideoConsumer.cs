@@ -181,7 +181,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             while (true)
             {
-                if (timeoutFile == LIMIT_TIMEOUT)
+                if (timeoutFile >= LIMIT_TIMEOUT)
                 {
                     //send api failed download
                     episode.StateDownload = "failed";
@@ -297,7 +297,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 do
                 {
-                    if (timeout == LIMIT_TIMEOUT)
+                    if (timeout >= LIMIT_TIMEOUT)
                     {
                         //send api failed download
                         episode.StateDownload = "failed";

@@ -99,14 +99,24 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 //convert ts to mp4
                 var tempMp4 = $"{pathTemp}/{Path.GetFileName(message.FilePath)}";
-                var process = FFMpegArguments
-                    .FromFileInput(fileTemp)
-                    .OutputToFile(tempMp4, true, options => options
-                        .WithVideoCodec(VideoCodec.LibX264)
-                        .WithAudioCodec(AudioCodec.Aac)
-                        .WithVideoFilters(filterOptions => filterOptions
-                            .Scale(VideoSize.FullHd)))
-                    .ProcessSynchronously();
+
+                try
+                {
+                    var process = FFMpegArguments
+                        .FromFileInput(fileTemp)
+                        .OutputToFile(tempMp4, true, options => options
+                            .WithVideoCodec(VideoCodec.LibX264)
+                            .WithAudioCodec(AudioCodec.Aac)
+                            .WithVideoFilters(filterOptions => filterOptions
+                                .Scale(VideoSize.FullHd)))
+                        .ProcessSynchronously();
+                }catch(Exception ex)
+                {
+                    _logger.Error($"Impossible conversion ID: {episode.ID}, details: {ex}");
+                    episode.StateDownload = "failed";
+                    SendStatusDownloadAPIAsync(episode, episodeApi);
+                    return Task.CompletedTask;
+                }
 
                 File.Move(tempMp4, message.FilePath, true);
 
