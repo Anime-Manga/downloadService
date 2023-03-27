@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
@@ -19,12 +20,14 @@ namespace Cesxhin.AnimeManga.Application.Services
         private readonly IDescriptionRepository _descriptionRepository;
         private readonly IChapterRepository _chapterRepository;
         private readonly IChapterRegisterRepository _chapterRegisterRepository;
+        private readonly IAccountService _accountService;
 
-        public DescriptionBookService(IDescriptionRepository descriptionRepository, IChapterRepository chapterRepository, IChapterRegisterRepository chapterRegisterRepository)
+        public DescriptionBookService(IAccountService accountService, IDescriptionRepository descriptionRepository, IChapterRepository chapterRepository, IChapterRegisterRepository chapterRegisterRepository)
         {
             _descriptionRepository = descriptionRepository;
             _chapterRepository = chapterRepository;
             _chapterRegisterRepository = chapterRegisterRepository;
+            _accountService = accountService;
         }
         public async Task<string> DeleteNameByIdAsync(string nameCfg, string name)
         {
@@ -54,17 +57,95 @@ namespace Cesxhin.AnimeManga.Application.Services
             return name;
         }
 
-        public async Task<IEnumerable<JObject>> GetMostNameByNameAsync(string nameCfg, string name)
+        public async Task<IEnumerable<JObject>> GetMostNameByNameAsync(string nameCfg, string name, string username)
         {
-            return await _descriptionRepository.GetMostNameByNameAsync(nameCfg, name);
+            var result = await _descriptionRepository.GetMostNameByNameAsync(nameCfg, name);
+            var watchList = await _accountService.GetListWatchListByUsername(username);
+
+            if (watchList != null)
+            {
+                result.ForEach(item =>
+                {
+                    var filterWatchList = watchList.Where((singleWatchList) => {
+                        if (singleWatchList.Name == item["name_id"].ToString() && singleWatchList.NameCfg == item["nameCfg"].ToString())
+                            return true;
+                        return false;
+                    });
+
+                    if (filterWatchList.Count() > 0)
+                        item["watchList"] = true;
+                    else
+                        item["watchList"] = false;
+                });
+            }
+
+            return result;
         }
 
-        public async Task<IEnumerable<JObject>> GetNameAllAsync(string nameCfg)
+        public async Task<IEnumerable<JObject>> GetNameAllAsync(string nameCfg, string username)
         {
-            return await _descriptionRepository.GetNameAllAsync(nameCfg);
+            var result = await _descriptionRepository.GetNameAllAsync(nameCfg);
+            var watchList = await _accountService.GetListWatchListByUsername(username);
+
+            if (watchList != null)
+            {
+                result.ForEach(item =>
+                {
+                    var filterWatchList = watchList.Where((singleWatchList) => {
+                        if (singleWatchList.Name == item["name_id"].ToString() && singleWatchList.NameCfg == item["nameCfg"].ToString())
+                            return true;
+                        return false;
+                    });
+
+                    if (filterWatchList.Count() > 0)
+                        item["watchList"] = true;
+                    else
+                        item["watchList"] = false;
+                });
+            }
+
+            return result;
         }
 
-        public async Task<IEnumerable<GenericBookDTO>> GetNameAllWithAllAsync(string nameCfg)
+        public async Task<IEnumerable<JObject>> GetNameAllOnlyWatchListAsync(string nameCfg, string username)
+        {
+            var watchList = await _accountService.GetListWatchListByUsername(username);
+
+            var result = new List<JObject>();
+            JObject resultFind;
+
+            if (watchList != null)
+            {
+                foreach (var watch in watchList)
+                {
+                    if (watch.NameCfg == nameCfg)
+                    {
+                        resultFind = await _descriptionRepository.GetNameByNameAsync(watch.NameCfg, watch.Name);
+
+                        if (resultFind != null)
+                            result.Add(resultFind);
+                    }
+                }
+
+                result.ForEach(item =>
+                {
+                    var filterWatchList = watchList.Where((singleWatchList) => {
+                        if (singleWatchList.Name == item["name_id"].ToString() && singleWatchList.NameCfg == item["nameCfg"].ToString())
+                            return true;
+                        return false;
+                    });
+
+                    if (filterWatchList.Count() > 0)
+                        item["watchList"] = true;
+                    else
+                        item["watchList"] = false;
+                });
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<GenericBookDTO>> GetNameAllWithAllAsync(string nameCfg, string username)
         {
             List<GenericBookDTO> listGenericDTO = new();
 
@@ -74,6 +155,24 @@ namespace Cesxhin.AnimeManga.Application.Services
             var listDescriptions = await _descriptionRepository.GetNameAllAsync(nameCfg);
             if (listDescriptions == null)
                 return null;
+
+            var watchList = await _accountService.GetListWatchListByUsername(username);
+            if (watchList != null)
+            {
+                listDescriptions.ForEach(item =>
+                {
+                    var filterWatchList = watchList.Where((singleWatchList) => {
+                        if (singleWatchList.Name == item["name_id"].ToString() && singleWatchList.NameCfg == item["nameCfg"].ToString())
+                            return true;
+                        return false;
+                    });
+
+                    if (filterWatchList.Count() > 0)
+                        item["watchList"] = true;
+                    else
+                        item["watchList"] = false;
+                });
+            }
 
             //anime
             foreach (var description in listDescriptions)
@@ -107,9 +206,25 @@ namespace Cesxhin.AnimeManga.Application.Services
             return listGenericDTO;
         }
 
-        public async Task<JObject> GetNameByNameAsync(string nameCfg, string name)
+        public async Task<JObject> GetNameByNameAsync(string nameCfg, string name, string username)
         {
-            return await _descriptionRepository.GetNameByNameAsync(nameCfg, name);
+            var result = await _descriptionRepository.GetNameByNameAsync(nameCfg, name);
+            var watchList = await _accountService.GetListWatchListByUsername(username);
+            if (watchList != null)
+            {
+                var filterWatchList = watchList.Where((singleWatchList) => {
+                    if (singleWatchList.Name == result["name_id"].ToString() && singleWatchList.NameCfg == result["nameCfg"].ToString())
+                        return true;
+                    return false;
+                });
+
+                if (filterWatchList.Count() > 0)
+                    result["watchList"] = true;
+                else
+                    result["watchList"] = false;
+            }
+
+            return result;
         }
 
         public async Task<JObject> InsertNameAsync(string nameCfg, JObject description)

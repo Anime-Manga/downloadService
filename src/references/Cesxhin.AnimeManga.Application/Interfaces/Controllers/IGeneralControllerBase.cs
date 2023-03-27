@@ -7,10 +7,10 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
     public interface IGeneralControllerBase<I, O, R, D>
     {
         //get
-        public Task<IActionResult> GetInfoAll(string nameCfg);
-        public Task<IActionResult> GetInfoByName(string nameCfg, string name);
-        public Task<IActionResult> GetMostInfoByName(string nameCfg, string name);
-        public Task<IActionResult> GetAll(string nameCfg);
+        public Task<IActionResult> GetInfoAll(string nameCfg, string username);
+        public Task<IActionResult> GetInfoByName(string nameCfg, string name, string username);
+        public Task<IActionResult> GetMostInfoByName(string nameCfg, string name, string username);
+        public Task<IActionResult> GetAll(string nameCfg, string username);
         public Task<IActionResult> GetObjectByName(string name);
         public Task<IActionResult> GetObjectById(string id);
         public Task<IActionResult> GetObjectRegisterByObjectId(string id);

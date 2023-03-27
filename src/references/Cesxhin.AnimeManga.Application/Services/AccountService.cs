@@ -1,7 +1,9 @@
-﻿using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
+﻿using Cesxhin.AnimeManga.Application.Generic;
+using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.Interfaces.Services;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
@@ -12,6 +14,16 @@ namespace Cesxhin.AnimeManga.Application.Services
         public AccountService(IAccountRepository accountRepository)
         {
             _accountRepository = accountRepository;
+        }
+
+        private static bool validPassword(string password, string hasedPassword)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hasedPassword);
+        }
+
+        private static string cryptPasword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         public async Task<AuthDTO> CreateAccount(string username, string password)
@@ -43,14 +55,50 @@ namespace Cesxhin.AnimeManga.Application.Services
             return null;
         }
 
-        private static bool validPassword(string password, string hasedPassword)
+        public async Task<WatchListDTO> InsertWatchList(WatchListDTO whiteListDTO)
         {
-            return BCrypt.Net.BCrypt.Verify(password, hasedPassword);
+            if(!await _accountRepository.whiteListCheckByName(whiteListDTO.Name))
+            {
+                var result = await _accountRepository.InsertWhiteList(WatchList.WatchListDTOToWatchList(whiteListDTO));
+                if (result != null)
+                    return WatchListDTO.WatchListToWatchListDTO(result);
+            }
+            return null;
         }
 
-        private static string cryptPasword(string password)
+        public async Task<WatchListDTO> DeleteWatchList(WatchListDTO whiteListDTO)
         {
-            return BCrypt.Net.BCrypt.HashPassword(password);
+            var result = await _accountRepository.DeleteWhiteList(WatchList.WatchListDTOToWatchList(whiteListDTO));
+
+            if (result != null)
+                return WatchListDTO.WatchListToWatchListDTO(result);
+            return null;
+        }
+
+        public async Task<bool> WatchListCheckByName(string name)
+        {
+            return await _accountRepository.whiteListCheckByName(name);
+        }
+
+        public async Task<IEnumerable<WatchListDTO>> GetListWatchListByUsername(string username)
+        {
+            if(username != null)
+            {
+                var result = await _accountRepository.GetListWatchListByUsername(username);
+
+                if(result != null)
+                {
+                    var resultArray = new List<WatchListDTO>();
+
+                    foreach(var item in result)
+                    {
+                        resultArray.Add(WatchListDTO.WatchListToWatchListDTO(item));
+                    }
+
+                    return resultArray;
+                }
+            }
+            return null;
         }
     }
 }
