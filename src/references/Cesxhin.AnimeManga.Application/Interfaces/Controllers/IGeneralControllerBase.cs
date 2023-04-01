@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
 {
-    public interface IGeneralControllerBase<I, O, R, D>
+    public interface IGeneralControllerBase<I, O, R, D, E>
     {
         //get
         public Task<IActionResult> GetInfoAll(string nameCfg, string username);
@@ -15,6 +15,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
         public Task<IActionResult> GetObjectById(string id);
         public Task<IActionResult> GetObjectRegisterByObjectId(string id);
         public Task<IActionResult> GetListSearchByName(string nameCfg, string name);
+        public Task<IActionResult> GetStateProgress(string name, string username, string nameCfg);
 
         //put
         public Task<IActionResult> PutInfo(string nameCfg, I infoClass);
@@ -25,6 +26,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
         public Task<IActionResult> RedownloadObjectByUrlPage(string id);
         public Task<IActionResult> DownloadInfoByUrlPage(D objectsClass);
         public Task<IActionResult> PutUpdateStateDownload(O objectClass);
+        public Task<IActionResult> PutStateProgress(E objectClass);
 
         //delete
         public Task<IActionResult> DeleteInfo(string nameCfg, string id);
