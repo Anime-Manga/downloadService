@@ -163,7 +163,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         {
             try
             {
-                episodeApi.PutOne("/anime/statusDownload", episode).GetAwaiter().GetResult();
+                episodeApi.PutOne("/video/statusDownload", episode).GetAwaiter().GetResult();
             }
             catch (ApiNotFoundException ex)
             {
