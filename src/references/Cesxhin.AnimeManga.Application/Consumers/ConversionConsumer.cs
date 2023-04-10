@@ -100,6 +100,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 //convert ts to mp4
                 var tempMp4 = $"{pathTemp}/{Path.GetFileName(message.FilePath)}";
 
+                var mediaInfo = FFProbe.Analyse(fileTemp);
+
                 try
                 {
                     var process = FFMpegArguments
@@ -108,7 +110,21 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             .WithVideoCodec(VideoCodec.LibX264)
                             .WithAudioCodec(AudioCodec.Aac)
                             .WithVideoFilters(filterOptions => filterOptions
-                                .Scale(VideoSize.FullHd)))
+                                .Scale(VideoSize.FullHd))
+                            .WithFastStart()
+                            )
+                        .NotifyOnProgress((p) =>
+                        {
+                            episode.PercentualDownload = (int)p;
+                            _logger.Debug($"percentual: {episode.PercentualDownload}");
+                            SendStatusDownloadAPIAsync(episode, episodeApi);
+                        }, mediaInfo.Duration)
+                        .NotifyOnError((error) =>
+                        {
+                            _logger.Error($"Impossible conversion ID: {episode.ID}, details: {error}");
+                            episode.StateDownload = "failed";
+                            SendStatusDownloadAPIAsync(episode, episodeApi);
+                        })
                         .ProcessSynchronously();
                 }catch(Exception ex)
                 {
@@ -117,6 +133,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     SendStatusDownloadAPIAsync(episode, episodeApi);
                     return Task.CompletedTask;
                 }
+
+                if(episode.StateDownload == "failed")
+                    return Task.CompletedTask;
 
                 File.Move(tempMp4, message.FilePath, true);
 
