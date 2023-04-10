@@ -116,15 +116,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         .NotifyOnProgress((p) =>
                         {
                             episode.PercentualDownload = (int)p;
-                            _logger.Debug($"percentual: {episode.PercentualDownload}");
+                            _logger.Debug($"episode ID: {episode.ID} percentual: {episode.PercentualDownload}");
                             SendStatusDownloadAPIAsync(episode, episodeApi);
                         }, mediaInfo.Duration)
-                        .NotifyOnError((error) =>
-                        {
-                            _logger.Error($"Impossible conversion ID: {episode.ID}, details: {error}");
-                            episode.StateDownload = "failed";
-                            SendStatusDownloadAPIAsync(episode, episodeApi);
-                        })
                         .ProcessSynchronously();
                 }catch(Exception ex)
                 {
