@@ -98,6 +98,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 //send status api
                 episode.StateDownload = "conversioning";
+                episode.PercentualDownload = 0;
                 SendStatusDownloadAPIAsync(episode, episodeApi);
 
                 //convert ts to mp4
