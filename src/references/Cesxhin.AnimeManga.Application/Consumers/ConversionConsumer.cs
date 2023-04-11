@@ -19,7 +19,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
         //temp
-        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP");
+        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
         public Task Consume(ConsumeContext<ConversionDTO> context)
         {
             try
@@ -67,6 +67,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     return null;
                 }
 
+
+                _logger.Info($"Start conversion episode ID: {message.ID}");
+
                 var fileTemp = $"{pathTemp}/joined-{Path.GetFileName(message.FilePath)}.ts";
 
                 if (!File.Exists(fileTemp))
@@ -111,14 +114,25 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             .WithAudioCodec(AudioCodec.Aac)
                             .WithVideoFilters(filterOptions => filterOptions
                                 .Scale(VideoSize.FullHd))
-                            .WithFastStart()
-                            )
-                        .NotifyOnProgress((p) =>
+                            .WithFastStart())
+                        .NotifyOnError((outLine) =>
                         {
-                            episode.PercentualDownload = (int)p;
-                            _logger.Debug($"episode ID: {episode.ID} percentual: {episode.PercentualDownload}");
-                            SendStatusDownloadAPIAsync(episode, episodeApi);
-                        }, mediaInfo.Duration)
+                            if (outLine != null)
+                            {
+                                if (outLine.Contains("frame="))
+                                {
+                                    if(DateTime.Now.Second % 5 == 0)
+                                    {
+                                        var lastFrame = outLine.Split("fps")[0].Split("=")[1].Trim();
+                                        var percentual = Math.Round(decimal.Parse(lastFrame) / ((decimal)mediaInfo.Duration.TotalSeconds * (decimal)mediaInfo.VideoStreams[0].FrameRate) * 100);
+                                        episode.PercentualDownload = (int)percentual;
+
+                                        _logger.Debug($"episode ID: {episode.ID} percentual: {episode.PercentualDownload}");
+                                        SendStatusDownloadAPIAsync(episode, episodeApi);
+                                    }
+                                }
+                            }
+                        })
                         .ProcessSynchronously();
                 }catch(Exception ex)
                 {
@@ -160,6 +174,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 //send status api
                 episode.StateDownload = "completed";
+                episode.PercentualDownload = 100;
                 SendStatusDownloadAPIAsync(episode, episodeApi);
 
                 return Task.CompletedTask;
