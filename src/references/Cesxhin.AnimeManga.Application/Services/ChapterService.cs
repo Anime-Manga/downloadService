@@ -91,8 +91,6 @@ namespace Cesxhin.AnimeManga.Application.Services
             foreach (var chapter in listChapters)
             {
                 chapter.StateDownload = null;
-                chapter.PercentualDownload = 0;
-
                 var result = await _chapterRepository.ResetStatusDownloadObjectByIdAsync(chapter);
 
                 if(result != null)

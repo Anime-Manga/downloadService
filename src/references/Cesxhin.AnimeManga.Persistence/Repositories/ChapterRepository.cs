@@ -99,7 +99,10 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             {
                 try
                 {
-                    var rs = await connection.UpdateAsync(chapter, e => e.StateDownload != "completed" && e.ID == chapter.ID);
+                    int percentual = chapter.PercentualDownload;
+                    chapter.PercentualDownload = 0;
+
+                    var rs = await connection.UpdateAsync(chapter, e => e.StateDownload != "completed" && e.StateDownload != null && e.PercentualDownload == percentual && e.ID == chapter.ID);
 
                     if(rs > 0)
                         return chapter;

@@ -86,8 +86,6 @@ namespace Cesxhin.AnimeManga.Application.Services
             foreach (var episode in listEpisodes)
             {
                 episode.StateDownload = null;
-                episode.PercentualDownload = 0;
-
                 var result = await _episodeRepository.ResetStatusDownloadObjectByIdAsync(episode);
 
                 if (result != null)

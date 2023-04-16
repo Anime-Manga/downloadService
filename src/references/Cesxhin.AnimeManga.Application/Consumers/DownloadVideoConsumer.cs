@@ -31,6 +31,22 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         //temp
         private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
 
+        //proxy
+        private readonly bool enableProxy = false;
+        private readonly string[] listProxy;
+
+        public DownloadVideoConsumer()
+        {
+            var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
+
+            if(enableProxy == "true")
+            {
+                this.enableProxy = true;
+                var stringProxy = Environment.GetEnvironmentVariable("LIST_PROXY");
+                listProxy = stringProxy.Split(",");
+            }
+        }
+
 
         public Task Consume(ConsumeContext<EpisodeDTO> context)
         {
@@ -93,6 +109,10 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     //url with file
                     using (var client = new MyWebClient())
                     {
+                        //set proxy
+                        if (enableProxy)
+                            client.Proxy = new WebProxy(listProxy[new Random().Next(listProxy.Length)]);
+
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
                         client.DownloadFileCompleted += client_DownloadFileCompleted(filePathTemp, episode);
@@ -181,7 +201,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             while (true)
             {
-                if (timeoutFile == LIMIT_TIMEOUT)
+                if (timeoutFile >= LIMIT_TIMEOUT)
                 {
                     //send api failed download
                     episode.StateDownload = "failed";
@@ -295,9 +315,15 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             {
                 client.Timeout = 60000; //? check
 
-                do
+                //set proxy
+                if (enableProxy)
                 {
-                    if (timeout == LIMIT_TIMEOUT)
+                    client.Proxy = new WebProxy(listProxy[new Random().Next(listProxy.Length)]);
+                }
+
+                    do
+                    {
+                    if (timeout >= LIMIT_TIMEOUT)
                     {
                         //send api failed download
                         episode.StateDownload = "failed";
