@@ -17,6 +17,16 @@ namespace Cesxhin.AnimeManga.DownloadService
         {
             SchemaControl.Check();
 
+            //check proxy
+
+            var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
+
+            if(enableProxy == "true")
+            {
+                var textProxy = System.IO.File.ReadAllText("proxy.txt");
+                Environment.SetEnvironmentVariable("LIST_PROXY", textProxy);
+            }
+
             CreateHostBuilder(args).Build().Run();
         }
 
