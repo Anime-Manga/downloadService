@@ -5,7 +5,6 @@ using Cesxhin.AnimeManga.Application.Parallel;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
 using MassTransit;
-using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -19,9 +18,6 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 {
     public class DownloadVideoConsumer : IConsumer<EpisodeDTO>
     {
-        //const
-        const int LIMIT_TIMEOUT = 10;
-
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
@@ -31,6 +27,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         //temp
         private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
 
+        //download
+        private readonly int MAX_DELAY = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY") ?? "5");
+        private readonly int DELAY_RETRY_ERROR = int.Parse(Environment.GetEnvironmentVariable("DELAY_RETRY_ERROR") ?? "10000");
 
         public Task Consume(ConsumeContext<EpisodeDTO> context)
         {
@@ -181,7 +180,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             while (true)
             {
-                if (timeoutFile >= LIMIT_TIMEOUT)
+                if (timeoutFile >= 10)
                 {
                     //send api failed download
                     episode.StateDownload = "failed";
@@ -189,6 +188,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                     throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
                 }
+
                 try
                 {
                     //create file and save to end operation
@@ -297,7 +297,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 do
                 {
-                    if (timeout >= LIMIT_TIMEOUT)
+                    if (timeout >= MAX_DELAY)
                     {
                         //send api failed download
                         episode.StateDownload = "failed";
@@ -327,11 +327,10 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     catch (Exception ex)
                     {
                         _logger.Error(ex);
-                        _logger.Warn($"The attempts remains: {LIMIT_TIMEOUT - timeout} for {url}");
+                        _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {url}");
                         timeout++;
 
-                        //waiting before for re-download
-                        Thread.Sleep(timeout * 1000);
+                        Thread.Sleep(DELAY_RETRY_ERROR);
                     }
                 } while (true);
             }
