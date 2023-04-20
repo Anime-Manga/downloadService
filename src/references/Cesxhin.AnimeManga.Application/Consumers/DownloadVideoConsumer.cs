@@ -315,14 +315,14 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             {
                 client.Timeout = 60000; //? check
 
-                //set proxy
-                if (enableProxy)
-                {
-                    client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
-                }
-
                 do
                 {
+                    //set proxy
+                    if (enableProxy)
+                    {
+                        client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
+                    }
+
                     if (timeout >= MAX_DELAY)
                     {
                         //send api failed download
