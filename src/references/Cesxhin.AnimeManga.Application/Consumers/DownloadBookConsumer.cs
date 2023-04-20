@@ -16,9 +16,6 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 {
     public class DownloadBookConsumer : IConsumer<ChapterDTO>
     {
-        //const
-        const int LIMIT_TIMEOUT = 10;
-
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
@@ -28,6 +25,11 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         //api
         private readonly Api<ChapterDTO> chapterApi = new();
         private readonly Api<ChapterRegisterDTO> chapterRegisterApi = new();
+
+        //download
+        private readonly int MAX_DELAY = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY") ?? "5");
+        private readonly int DELAY_RETRY_ERROR = int.Parse(Environment.GetEnvironmentVariable("DELAY_RETRY_ERROR") ?? "10000");
+
 
         public Task Consume(ConsumeContext<ChapterDTO> context)
         {
@@ -160,14 +162,15 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             {
                 imgBytes = RipperBookGeneric.GetImagePage(chapter.UrlPage, currentImage, chapter);
 
-                if (timeout >= LIMIT_TIMEOUT)
+                if (timeout >= MAX_DELAY)
                 {
                     _logger.Error($"Failed download, details: {chapter.UrlPage}");
                     return "failed";
                 }
                 else if (imgBytes == null)
                 {
-                    _logger.Warn($"The attempts remains: {LIMIT_TIMEOUT - timeout} for {chapter.UrlPage}");
+                    _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {chapter.UrlPage}");
+                    Task.Delay(DELAY_RETRY_ERROR);
                     timeout++;
                 }
                 else
