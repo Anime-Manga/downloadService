@@ -110,7 +110,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     {
                         //set proxy
                         if (enableProxy)
-                            client.Proxy = new WebProxy(listProxy[new Random().Next(listProxy.Length)]);
+                            client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
 
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
@@ -318,7 +318,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 //set proxy
                 if (enableProxy)
                 {
-                    client.Proxy = new WebProxy(listProxy[new Random().Next(listProxy.Length)]);
+                    client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
                 }
 
                 do
