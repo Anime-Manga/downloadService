@@ -27,6 +27,22 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         //temp
         private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
 
+        //proxy
+        private readonly bool enableProxy = false;
+        private readonly string[] listProxy;
+
+        public DownloadVideoConsumer()
+        {
+            var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
+
+            if(enableProxy == "true")
+            {
+                this.enableProxy = true;
+                var stringProxy = Environment.GetEnvironmentVariable("LIST_PROXY");
+                listProxy = stringProxy.Split(",");
+            }
+        }
+
         //download
         private readonly int MAX_DELAY = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY") ?? "5");
         private readonly int DELAY_RETRY_ERROR = int.Parse(Environment.GetEnvironmentVariable("DELAY_RETRY_ERROR") ?? "10000");
@@ -92,6 +108,10 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     //url with file
                     using (var client = new MyWebClient())
                     {
+                        //set proxy
+                        if (enableProxy)
+                            client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
+
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
                         client.DownloadFileCompleted += client_DownloadFileCompleted(filePathTemp, episode);
@@ -297,6 +317,12 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 do
                 {
+                    //set proxy
+                    if (enableProxy)
+                    {
+                        client.Proxy = new WebProxy(new Uri(listProxy[new Random().Next(listProxy.Length)]));
+                    }
+
                     if (timeout >= MAX_DELAY)
                     {
                         //send api failed download
