@@ -20,12 +20,8 @@ namespace Cesxhin.AnimeManga.Application.Services
         //get episodeRegister by episode id
         public async Task<EpisodeRegisterDTO> GetObjectRegisterByObjectId(string id)
         {
-            var listEpisodesRegisters = await _episodeRegisterRepository.GetObjectsRegisterByObjectId(id);
-            foreach (var episodeRegister in listEpisodesRegisters)
-            {
-                return EpisodeRegisterDTO.EpisodeRegisterToEpisodeRegisterDTO(episodeRegister);
-            }
-            return null;
+            var episodeRegister = await _episodeRegisterRepository.GetObjectRegisterByObjectId(id);
+            return EpisodeRegisterDTO.EpisodeRegisterToEpisodeRegisterDTO(episodeRegister);
         }
 
         //insert episodeRegister
@@ -36,7 +32,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         }
 
         //insert list episodeRegister
-        public async Task<List<EpisodeRegisterDTO>> InsertObjectsRegistersAsync(List<EpisodeRegisterDTO> episodesRegistersDTO)
+        public async Task<IEnumerable<EpisodeRegisterDTO>> InsertObjectsRegistersAsync(List<EpisodeRegisterDTO> episodesRegistersDTO)
         {
             List<EpisodeRegisterDTO> resultEpisodes = new();
             foreach (var episode in episodesRegistersDTO)
@@ -51,8 +47,6 @@ namespace Cesxhin.AnimeManga.Application.Services
         public async Task<EpisodeRegisterDTO> UpdateObjectRegisterAsync(EpisodeRegisterDTO episodeRegister)
         {
             var rs = await _episodeRegisterRepository.UpdateObjectRegisterAsync(EpisodeRegister.EpisodeRegisterToEpisodeRegisterDTO(episodeRegister));
-            if (rs == null)
-                return null;
             return EpisodeRegisterDTO.EpisodeRegisterToEpisodeRegisterDTO(rs);
         }
     }

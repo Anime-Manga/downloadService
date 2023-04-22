@@ -335,7 +335,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
                     Resolution = playerUrl.Resolution,
                     NumberSeasonCurrent = numberSeason,
                     endNumberBuffer = playerUrl.endNumberBuffer,
-                    nameCfg = nameCfg 
+                    nameCfg = nameCfg
                 };
             }
             else

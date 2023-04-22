@@ -1,4 +1,5 @@
-﻿using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
+using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.Models;
 using NLog;
@@ -23,16 +24,21 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                object rs = null;
                 try
                 {
-                    await connection.InsertAsync(auth);
-                    return auth;
+                    rs = await connection.InsertAsync(auth);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed CreateAccount, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && !string.IsNullOrEmpty(rs.ToString()))
+                    return auth;
+                else
+                    throw new ApiNotFoundException("Not found CreateAccount");
             }
         }
 
@@ -40,39 +46,43 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
                 try
                 {
-                    var rs = await connection.DeleteAsync(whiteList);
-
-                    if (rs > 0)
-                        return whiteList;
-                    return null;
+                    rs = await connection.DeleteAsync(whiteList);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed DeleteWhiteList, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return whiteList;
+                else
+                    throw new ApiNotFoundException("Not found DeleteWhiteList");
             }
         }
 
-        public async Task<Auth> findAccountByUsername(string username)
+        public async Task<Auth> FindAccountByUsername(string username)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                IEnumerable<Auth> rs;
                 try
                 {
-                    var rs = await connection.QueryAsync<Auth>(e => e.Username == username);
-
-                    if (rs != null && rs.Count() > 0)
-                        return rs.First();
-                    return null;
+                    rs = await connection.QueryAsync<Auth>(e => e.Username == username);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed findAccountByUsername, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && rs.Any())
+                    return rs.First();
+                else
+                    throw new ApiNotFoundException("Not found findAccountByUsername");
             }
         }
 
@@ -80,19 +90,21 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                IEnumerable<WatchList> rs;
                 try
                 {
-                    var rs = await connection.QueryAsync<WatchList>(e => e.Username == username);
-
-                    if (rs != null && rs.Count() > 0)
-                        return rs;
-                    return null;
+                    rs = await connection.QueryAsync<WatchList>(e => e.Username == username);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed GetListWatchListByUsername, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && rs.Any())
+                    return rs;
+                else
+                    throw new ApiNotFoundException("Not found GetListWatchListByUsername");
             }
         }
 
@@ -100,36 +112,43 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                object rs = null;
                 try
                 {
-                    await connection.InsertAsync(whiteList);
-                    return whiteList;
+                    rs = await connection.InsertAsync(whiteList);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed InsertWhiteList, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && !string.IsNullOrEmpty(rs.ToString()))
+                    return whiteList;
+                else
+                    throw new ApiNotFoundException("Not found InsertWhiteList");
             }
         }
 
-        public async Task<bool> whiteListCheckByName(string name)
+        public async Task<bool> WhiteListCheckByName(string name)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                IEnumerable<WatchList> rs;
                 try
                 {
-                    var rs = await connection.QueryAsync<WatchList>(e => e.Name == name);
-
-                    if(rs != null && rs.Count() > 0)
-                        return true;
-                    return false;
+                    rs = await connection.QueryAsync<WatchList>(e => e.Name == name);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed InsertWhiteList, details error: {ex.Message}");
-                    return false;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && rs.Any())
+                    return true;
+                else
+                    throw new ApiNotFoundException("Not found InsertWhiteList");
             }
         }
     }

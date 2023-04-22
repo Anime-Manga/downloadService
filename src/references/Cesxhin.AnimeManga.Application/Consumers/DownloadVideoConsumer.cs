@@ -35,7 +35,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         {
             var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
 
-            if(enableProxy == "true")
+            if (enableProxy == "true")
             {
                 this.enableProxy = true;
                 var stringProxy = Environment.GetEnvironmentVariable("LIST_PROXY");

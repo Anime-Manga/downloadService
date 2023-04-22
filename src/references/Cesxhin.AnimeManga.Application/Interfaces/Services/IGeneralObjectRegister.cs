@@ -10,7 +10,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Services
 
         //insert
         Task<TObjectRegisterDTO> InsertObjectRegisterAsync(TObjectRegisterDTO objectGeneralRegister);
-        Task<List<TObjectRegisterDTO>> InsertObjectsRegistersAsync(List<TObjectRegisterDTO> objectGeneralRegister);
+        Task<IEnumerable<TObjectRegisterDTO>> InsertObjectsRegistersAsync(List<TObjectRegisterDTO> objectGeneralRegister);
 
         //put
         Task<TObjectRegisterDTO> UpdateObjectRegisterAsync(TObjectRegisterDTO objectGeneralRegister);

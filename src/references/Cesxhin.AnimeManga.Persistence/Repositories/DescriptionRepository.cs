@@ -1,4 +1,5 @@
-﻿using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
+using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -22,7 +23,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         readonly string _nameDatabase = Environment.GetEnvironmentVariable("NAME_DATABASE_MONGO");
         readonly JObject _schema = JObject.Parse(Environment.GetEnvironmentVariable("SCHEMA"));
 
-        private string removeObjectId(string result)
+        private static string RemoveObjectId(string result)
         {
             var regex = new Regex(Regex.Escape("ObjectId("));
             var partOne = regex.Replace(result, "", 1);
@@ -33,9 +34,9 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
 
         }
 
-        private string getNameTable(string nameCfg)
+        private string GetNameTable(string nameCfg)
         {
-            if(_schema.ContainsKey(nameCfg))
+            if (_schema.ContainsKey(nameCfg))
             {
                 return _schema.GetValue(nameCfg).ToObject<JObject>().GetValue("name").ToString();
             }
@@ -46,21 +47,28 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         public async Task<int> DeleteNameAsync(string nameCfg, string id)
         {
             var client = new MongoClient(_connectionString);
+
+            int rs = 0;
             try
             {
                 var database = client.GetDatabase(_nameDatabase);
-                var collection = database.GetCollection<BsonDocument>("description_" + getNameTable(nameCfg));
+                var collection = database.GetCollection<BsonDocument>("description_" + GetNameTable(nameCfg));
                 var deleteFilter = Builders<BsonDocument>.Filter.Eq("name_id", id);
                 var result = await collection.DeleteOneAsync(deleteFilter);
 
-                return (int)result.DeletedCount;
+                rs = (int)result.DeletedCount;
             }
-            catch(Exception e)
+            catch (Exception ex)
             {
-                _logger.Error(e);
                 client.Cluster.Dispose();
-                return 0;
+                _logger.Error($"Failed DeleteNameAsync, details error: {ex.Message}");
+                throw new ApiGenericException(ex.Message);
             }
+
+            if (rs > 0)
+                return rs;
+            else
+                throw new ApiNotFoundException("Not found DeleteNameAsync");
         }
 
         public Task<List<JObject>> GetMostNameByNameAsync(string nameCfg, string name)
@@ -71,53 +79,59 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         public async Task<List<JObject>> GetNameAllAsync(string nameCfg)
         {
             var client = new MongoClient(_connectionString);
+
+            List<BsonDocument> list;
             try
             {
                 var database = client.GetDatabase(_nameDatabase);
-                var collection = database.GetCollection<BsonDocument>("description_" + getNameTable(nameCfg));
-                var list = collection.Find(Builders<BsonDocument>.Filter.Empty).ToList();
+                var collection = database.GetCollection<BsonDocument>("description_" + GetNameTable(nameCfg));
+                list = collection.Find(Builders<BsonDocument>.Filter.Empty).ToList();
+            }
+            catch (Exception ex)
+            {
+                client.Cluster.Dispose();
+                _logger.Error($"Failed DeleteNameAsync, details error: {ex.Message}");
+                throw new ApiGenericException(ex.Message);
+            }
 
-                if (list == null)
-                    return null;
-
+            if (list != null && list.Any())
+            {
                 var listObject = new List<JObject>();
 
-                foreach(var item in list)
+                foreach (var item in list)
                 {
-                    listObject.Add(JObject.Parse(removeObjectId(item.ToString())));
+                    listObject.Add(JObject.Parse(RemoveObjectId(item.ToString())));
                 }
 
                 return listObject;
             }
-            catch (Exception e)
-            {
-                _logger.Error(e);
-                client.Cluster.Dispose();
-                return null;
-            }
+            else
+                throw new ApiNotFoundException("Not found GetNameAllAsync");
         }
 
         public async Task<JObject> GetNameByNameAsync(string nameCfg, string name)
         {
             var client = new MongoClient(_connectionString);
+
+            BsonDocument result;
             try
             {
                 var database = client.GetDatabase(_nameDatabase);
-                var collection = database.GetCollection<BsonDocument>("description_" + getNameTable(nameCfg));
+                var collection = database.GetCollection<BsonDocument>("description_" + GetNameTable(nameCfg));
                 var findFilter = Builders<BsonDocument>.Filter.Eq("name_id", name);
-                var result = collection.Find(findFilter).FirstOrDefault();
-
-                if (result == null)
-                    return null;
-                
-                return JObject.Parse(removeObjectId(result.ToString()));
+                result = collection.Find(findFilter).FirstOrDefault();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.Error(e);
                 client.Cluster.Dispose();
-                return null;
+                _logger.Error($"Failed DeleteNameAsync, details error: {ex.Message}");
+                throw new ApiGenericException(ex.Message);
             }
+
+            if (result != null && result.Any())
+                return JObject.Parse(RemoveObjectId(result.ToString()));
+            else
+                throw new ApiNotFoundException("Not found GetNameByNameAsync");
         }
 
         public async Task<JObject> InsertNameAsync(string nameCfg, JObject description)
@@ -125,17 +139,17 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
             var client = new MongoClient(_connectionString);
             try
             {
-                var database = client.GetDatabase(_nameDatabase );
-                var collection = database.GetCollection<BsonDocument>("description_" + getNameTable(nameCfg));
+                var database = client.GetDatabase(_nameDatabase);
+                var collection = database.GetCollection<BsonDocument>("description_" + GetNameTable(nameCfg));
                 await collection.InsertOneAsync(BsonDocument.Parse(description.ToString()));
 
                 return description;
             }
-            catch(Exception e)
+            catch (Exception ex)
             {
-                _logger.Error(e);
                 client.Cluster.Dispose();
-                return null;
+                _logger.Error($"Failed DeleteNameAsync, details error: {ex.Message}");
+                throw new ApiGenericException(ex.Message);
             }
         }
     }

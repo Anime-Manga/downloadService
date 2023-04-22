@@ -117,7 +117,7 @@ namespace Cesxhin.AnimeManga.Application.HtmlAgilityPack
             var schema = _schema.GetValue(chapter.NameCfg).ToObject<JObject>();
             var downloadSchema = schema.GetValue("book").ToObject<JObject>().GetValue("download").ToObject<JObject>();
 
-            if(downloadSchema.ContainsKey("startZero") && downloadSchema.GetValue("startZero").ToObject<bool>() == true)
+            if (downloadSchema.ContainsKey("startZero") && downloadSchema.GetValue("startZero").ToObject<bool>() == true)
                 downloadSchema["numberPage"] = page + 1;
             else
                 downloadSchema["numberPage"] = page;

@@ -1,4 +1,4 @@
-﻿using Cesxhin.AnimeManga.Application.Generic;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
 using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.Interfaces.Services;
 using Cesxhin.AnimeManga.Domain.DTO;
@@ -16,19 +16,24 @@ namespace Cesxhin.AnimeManga.Application.Services
             _accountRepository = accountRepository;
         }
 
-        private static bool validPassword(string password, string hasedPassword)
+        private static bool ValidPassword(string password, string hasedPassword)
         {
             return BCrypt.Net.BCrypt.Verify(password, hasedPassword);
         }
 
-        private static string cryptPasword(string password)
+        private static string CryptPasword(string password)
         {
             return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         public async Task<AuthDTO> CreateAccount(string username, string password)
         {
-            if(await _accountRepository.findAccountByUsername(username) == null)
+            try
+            {
+                await _accountRepository.FindAccountByUsername(username);
+                throw new ApiConflictException("Conflict CreateAccount");
+            }
+            catch (ApiNotFoundException)
             {
                 var auth = new Auth
                 {
@@ -36,69 +41,69 @@ namespace Cesxhin.AnimeManga.Application.Services
                     Password = password
                 };
 
-               auth.Password = cryptPasword(auth.Password);
-               var authResult = await _accountRepository.CreateAccount(auth);
+                auth.Password = CryptPasword(auth.Password);
+                var authResult = await _accountRepository.CreateAccount(auth);
 
-               return AuthDTO.AuthToAuthDTO(authResult);
+                return AuthDTO.AuthToAuthDTO(authResult);
             }
-
-            return null;
         }
 
         public async Task<AuthDTO> Login(string username, string password)
         {
-            var findUser = await _accountRepository.findAccountByUsername(username);
+            Auth findUser;
+            try
+            {
+                findUser = await _accountRepository.FindAccountByUsername(username);
+            }
+            catch (ApiNotFoundException)
+            {
+                throw new ApiNotAuthorizeException("Not Authorize Login");
+            }
 
-            if (findUser != null && validPassword(password, findUser.Password))
+            if (findUser != null && ValidPassword(password, findUser.Password))
                 return AuthDTO.AuthToAuthDTO(findUser);
+            else
+                throw new ApiNotAuthorizeException("Not Authorize Login");
 
-            return null;
         }
 
         public async Task<WatchListDTO> InsertWatchList(WatchListDTO whiteListDTO)
         {
-            if(!await _accountRepository.whiteListCheckByName(whiteListDTO.Name))
+            try
+            {
+                await _accountRepository.WhiteListCheckByName(whiteListDTO.Name);
+                throw new ApiConflictException("Conflict InsertWatchList");
+            }
+            catch (ApiNotFoundException)
             {
                 var result = await _accountRepository.InsertWhiteList(WatchList.WatchListDTOToWatchList(whiteListDTO));
-                if (result != null)
-                    return WatchListDTO.WatchListToWatchListDTO(result);
+                return WatchListDTO.WatchListToWatchListDTO(result);
             }
-            return null;
         }
 
         public async Task<WatchListDTO> DeleteWatchList(WatchListDTO whiteListDTO)
         {
             var result = await _accountRepository.DeleteWhiteList(WatchList.WatchListDTOToWatchList(whiteListDTO));
-
-            if (result != null)
-                return WatchListDTO.WatchListToWatchListDTO(result);
-            return null;
+            return WatchListDTO.WatchListToWatchListDTO(result);
         }
 
         public async Task<bool> WatchListCheckByName(string name)
         {
-            return await _accountRepository.whiteListCheckByName(name);
+            return await _accountRepository.WhiteListCheckByName(name);
         }
 
         public async Task<IEnumerable<WatchListDTO>> GetListWatchListByUsername(string username)
         {
-            if(username != null)
+            var result = await _accountRepository.GetListWatchListByUsername(username);
+
+            var resultArray = new List<WatchListDTO>();
+
+            foreach (var item in result)
             {
-                var result = await _accountRepository.GetListWatchListByUsername(username);
-
-                if(result != null)
-                {
-                    var resultArray = new List<WatchListDTO>();
-
-                    foreach(var item in result)
-                    {
-                        resultArray.Add(WatchListDTO.WatchListToWatchListDTO(item));
-                    }
-
-                    return resultArray;
-                }
+                resultArray.Add(WatchListDTO.WatchListToWatchListDTO(item));
             }
-            return null;
+
+            return resultArray;
         }
     }
 }

@@ -122,7 +122,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             {
                                 if (outLine.Contains("frame="))
                                 {
-                                    if(DateTime.Now.Second % 5 == 0)
+                                    if (DateTime.Now.Second % 5 == 0)
                                     {
                                         var lastFrame = outLine.Split("fps")[0].Split("=")[1].Trim();
                                         var percentual = Math.Round(decimal.Parse(lastFrame) / ((decimal)mediaInfo.Duration.TotalSeconds * (decimal)mediaInfo.VideoStreams[0].FrameRate) * 100);
@@ -135,7 +135,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             }
                         })
                         .ProcessSynchronously();
-                }catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     _logger.Error($"Impossible conversion ID: {episode.ID}, details: {ex}");
                     episode.StateDownload = "failed";
@@ -143,7 +144,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     return Task.CompletedTask;
                 }
 
-                if(episode.StateDownload == "failed")
+                if (episode.StateDownload == "failed")
                     return Task.CompletedTask;
 
                 File.Move(tempMp4, message.FilePath, true);

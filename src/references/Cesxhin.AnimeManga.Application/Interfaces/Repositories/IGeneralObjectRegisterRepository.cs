@@ -6,9 +6,10 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
     public interface IGeneralObjectRegisterRepository<T>
     {
         //get
-        Task<List<T>> GetObjectsRegisterByObjectId(string id);
+        Task<T> GetObjectRegisterByObjectId(string id);
 
         //insert
+        Task<IEnumerable<T>> InsertObjectsRegisterAsync(List<T> objectRegister);
         Task<T> InsertObjectRegisterAsync(T objectRegister);
 
         //put

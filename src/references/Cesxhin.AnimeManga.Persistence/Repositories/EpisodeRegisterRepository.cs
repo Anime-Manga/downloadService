@@ -1,4 +1,4 @@
-﻿using Cesxhin.AnimeManga.Application.Generic;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
 using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.Models;
@@ -7,6 +7,7 @@ using Npgsql;
 using RepoDb;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Persistence.Repositories
@@ -20,38 +21,72 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         readonly string _connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
         //get all episodesRegisters
-        public async Task<List<EpisodeRegister>> GetObjectsRegisterByObjectId(string id)
+        public async Task<EpisodeRegister> GetObjectRegisterByObjectId(string id)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                IEnumerable<EpisodeRegister> rs;
                 try
                 {
-                    var rs = await connection.QueryAsync<EpisodeRegister>(e => e.EpisodeId == id);
-                    return ConvertGeneric<EpisodeRegister>.ConvertIEnurableToListCollection(rs);
+                    rs = await connection.QueryAsync<EpisodeRegister>(e => e.EpisodeId == id);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed GetEpisodeRegisterByEpisodeId, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && rs.Any())
+                    return rs.First();
+                else
+                    throw new ApiNotFoundException("Not found GetObjectsRegisterByObjectId");
             }
         }
 
         //insert
-        public async Task<EpisodeRegister> InsertObjectRegisterAsync(EpisodeRegister episodeRegister)
+        public async Task<IEnumerable<EpisodeRegister>> InsertObjectsRegisterAsync(List<EpisodeRegister> episodeRegister)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
+
                 try
                 {
-                    await connection.InsertAsync(episodeRegister);
-                    return episodeRegister;
+                    rs = await connection.InsertAllAsync(episodeRegister);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed InsertEpisodeRegisterAsync, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return episodeRegister;
+                else
+                    throw new ApiNotFoundException("Not found InsertObjectRegisterAsync");
+            }
+        }
+
+        public async Task<EpisodeRegister> InsertObjectRegisterAsync(EpisodeRegister episodeRegister)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                object rs = null;
+
+                try
+                {
+                    rs = await connection.InsertAsync(episodeRegister);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed InsertEpisodeRegisterAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
+                }
+
+                if (rs != null && !string.IsNullOrEmpty(rs.ToString()))
+                    return episodeRegister;
+                else
+                    throw new ApiNotFoundException("Not found InsertObjectRegisterAsync");
             }
         }
 
@@ -60,20 +95,22 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
+
                 try
                 {
-                    var rs = await connection.UpdateAsync(episodeRegister, e => e.EpisodeId == episodeRegister.EpisodeId);
-
-                    //check update
-                    if(rs > 0)
-                        return episodeRegister;
-                    return null;
+                    rs = await connection.UpdateAsync(episodeRegister, e => e.EpisodeId == episodeRegister.EpisodeId);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Failed UpdateEpisodeRegisterAsync, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return episodeRegister;
+                else
+                    throw new ApiNotFoundException("Not found UpdateObjectRegisterAsync");
             }
         }
     }

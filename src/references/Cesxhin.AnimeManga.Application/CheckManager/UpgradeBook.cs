@@ -176,7 +176,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                     }
                 }
             }
-            
+
 
             _logger.Info($"End upgrade book");
         }

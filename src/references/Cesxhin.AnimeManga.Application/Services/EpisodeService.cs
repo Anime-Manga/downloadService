@@ -3,6 +3,7 @@ using Cesxhin.AnimeManga.Application.Interfaces.Services;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
@@ -20,30 +21,20 @@ namespace Cesxhin.AnimeManga.Application.Services
         //get episode by id
         public async Task<EpisodeDTO> GetObjectByIDAsync(string id)
         {
-            var listEpisode = await _episodeRepository.GetObjectsByIDAsync(id);
-            foreach (var episode in listEpisode)
-            {
-                return EpisodeDTO.EpisodeToEpisodeDTO(episode);
-            }
-            return null;
+            var episode = await _episodeRepository.GetObjectByIDAsync(id);
+            return EpisodeDTO.EpisodeToEpisodeDTO(episode);
         }
 
         //get episodes by name
         public async Task<IEnumerable<EpisodeDTO>> GetObjectsByNameAsync(string name)
         {
-            List<EpisodeDTO> episodes = new();
             var listEpisode = await _episodeRepository.GetObjectsByNameAsync(name);
 
-            if (listEpisode == null)
-                return null;
-
+            List<EpisodeDTO> episodes = new();
             foreach (var episode in listEpisode)
             {
                 episodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episode));
             }
-
-            if (episodes.Count <= 0)
-                return null;
 
             return episodes;
         }
@@ -52,10 +43,6 @@ namespace Cesxhin.AnimeManga.Application.Services
         public async Task<EpisodeDTO> InsertObjectAsync(EpisodeDTO episode)
         {
             var episodeResult = await _episodeRepository.InsertObjectAsync(new Episode().EpisodeDTOToEpisode(episode));
-
-            if (episodeResult == null)
-                return null;
-
             return EpisodeDTO.EpisodeToEpisodeDTO(episodeResult);
         }
 
@@ -78,21 +65,26 @@ namespace Cesxhin.AnimeManga.Application.Services
             return EpisodeDTO.EpisodeToEpisodeDTO(episodeResult);
         }
 
+        //reset all state
         public async Task<List<EpisodeDTO>> ResetStatusMultipleDownloadObjectByIdAsync(string name)
         {
             var listEpisodes = await _episodeRepository.GetObjectsByNameAsync(name);
-            List<EpisodeDTO> resultEpisodes = new();
 
             foreach (var episode in listEpisodes)
             {
                 episode.StateDownload = null;
-                var result = await _episodeRepository.ResetStatusDownloadObjectByIdAsync(episode);
-
-                if (result != null)
-                    resultEpisodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episode));
+                episode.PercentualDownload = 0;
             }
 
-            return resultEpisodes;
+            var resultEpisodes = await _episodeRepository.ResetStatusDownloadObjectsByIdAsync(listEpisodes.ToList());
+
+            List<EpisodeDTO> episodesDTOConvert = new();
+            foreach (var episode in resultEpisodes)
+            {
+                episodesDTOConvert.Add(EpisodeDTO.EpisodeToEpisodeDTO(episode));
+            }
+
+            return episodesDTOConvert;
         }
 
         //update PercentualState
