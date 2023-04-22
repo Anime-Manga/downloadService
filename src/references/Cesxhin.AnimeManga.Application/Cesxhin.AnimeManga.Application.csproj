@@ -11,15 +11,15 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
-    <PackageReference Include="Discord.Net.Webhook" Version="3.5.0" />
+    <PackageReference Include="Discord.Net.Webhook" Version="3.10.0" />
     <PackageReference Include="FFMpegCore" Version="5.1.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
     <PackageReference Include="m3uParser.NET" Version="1.0.17" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.2" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-    <PackageReference Include="MongoDB.Bson" Version="2.19.0" />
-    <PackageReference Include="NLog" Version="4.7.15" />
+    <PackageReference Include="MongoDB.Bson" Version="2.19.1" />
+    <PackageReference Include="NLog" Version="5.1.3" />
     <PackageReference Include="Quartz" Version="3.4.0" />
   </ItemGroup>
 
