@@ -15,6 +15,9 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Services
         //insert
         Task<TGeneralNameDTO> InsertNameAsync(string nameCfg, TGeneralNameDTO anime);
 
+        //update
+        Task<TGeneralNameDTO> UpdateNameAsync(string nameCfg, TGeneralNameDTO anime);
+
         //delete
         Task<string> DeleteNameByIdAsync(string nameCfg, string id);
     }

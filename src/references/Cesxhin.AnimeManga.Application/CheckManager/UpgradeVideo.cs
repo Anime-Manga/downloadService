@@ -30,6 +30,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         //api
         private readonly Api<GenericVideoDTO> genericApi = new();
+        private readonly Api<JObject> descriptionApi = new();
         private readonly Api<EpisodeDTO> episodeApi = new();
         private readonly Api<EpisodeRegisterDTO> episodeRegisterApi = new();
 
@@ -71,14 +72,46 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                     foreach (var list in listGenerics)
                     {
                         var video = JObject.Parse(list.Video);
-                        string name_id = (string)video.GetValue("name_id");
-                        string urlPage = (string)video.GetValue("url_page");
 
                         //get list episodes by name
                         List<EpisodeDTO> checkEpisodes = null;
                         List<EpisodeDTO> listEpisodesAdd = null;
 
-                        _logger.Info($"Check new episodes for Anime: {name_id}");
+                        string name_id = (string)video.GetValue("name_id");
+                        string urlPage = (string)video.GetValue("url_page");
+
+
+                        _logger.Info($"Check description for Video: {name_id}");
+
+                        var description = RipperVideoGeneric.GetDescriptionVideo(schema, urlPage, item.Key);
+                        var descriptionOriginal = JObject.Parse(list.Video);
+
+                        foreach (var field in description)
+                        {
+                            if(!descriptionOriginal.ContainsKey(field.Key))
+                                descriptionOriginal[field.Key] = description[field.Key];
+                            else if (!string.IsNullOrEmpty(description[field.Key].ToString()))
+                                descriptionOriginal[field.Key] = description[field.Key];
+                        }
+
+                        if (description.ToString() != descriptionOriginal.ToString())
+                        {
+                            _logger.Info($"Upgrade description of video: {name_id}");
+
+                            //insert to db
+                            try
+                            {
+                                descriptionApi.PutOne("/video", descriptionOriginal).GetAwaiter().GetResult();
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                            }
+                        }
+
+                        _logger.Info($"End check description for video: {name_id}");
+
+                        _logger.Info($"Check new episodes for video: {name_id}");
 
                         //check new episode
                         checkEpisodes = RipperVideoGeneric.GetEpisodes(schema, urlPage, name_id, item.Key);

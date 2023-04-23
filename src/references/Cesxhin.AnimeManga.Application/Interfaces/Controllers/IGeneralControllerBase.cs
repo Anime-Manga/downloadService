@@ -19,6 +19,7 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Controllers
 
         //put
         public Task<IActionResult> PutInfo(string nameCfg, I infoClass);
+        public Task<IActionResult> UpdateInfo(string content);
         public Task<IActionResult> PutObject(O objectClass);
         public Task<IActionResult> PutObjects(List<O> objectsClass);
         public Task<IActionResult> PutObjectsRegisters(List<R> objectsRegistersClass);

@@ -1,5 +1,6 @@
 ﻿using Cesxhin.AnimeManga.Application.Exceptions;
 using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -102,7 +103,34 @@ namespace Cesxhin.AnimeManga.Application.Generic
                 }
                 else
                 {
-                    throw new ApiConflictException(resultHttp.Content.ToString());
+                    throw new ApiConflictException(resultHttp.ReasonPhrase);
+                }
+            }
+        }
+
+        //for JObject
+        public async Task<JObject> PutOne(string path, JObject classDTO)
+        {
+            using (var client = new HttpClient())
+            using (var content = new StringContent(JsonSerializer.Serialize(classDTO.ToString()), System.Text.Encoding.UTF8, "application/json"))
+            {
+                var resultHttp = await client.PutAsync($"{_protocol}://{_address}:{_port}{path}", content);
+                if (resultHttp.IsSuccessStatusCode)
+                {
+                    var contentResponse = await resultHttp.Content.ReadAsStringAsync();
+                    return JObject.Parse(contentResponse);
+                }
+                else if (resultHttp.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new ApiNotFoundException(resultHttp.Content.ToString());
+                }
+                else if (resultHttp.StatusCode == HttpStatusCode.Conflict)
+                {
+                    throw new ApiNotFoundException(resultHttp.Content.ToString());
+                }
+                else
+                {
+                    throw new ApiConflictException(resultHttp.ReasonPhrase);
                 }
             }
         }

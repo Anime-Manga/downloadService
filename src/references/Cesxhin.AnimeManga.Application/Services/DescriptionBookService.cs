@@ -256,5 +256,19 @@ namespace Cesxhin.AnimeManga.Application.Services
                 throw new ApiNotFoundException("Not found field 'name_id' of book");
             }
         }
+
+        public async Task<JObject> UpdateNameAsync(string nameCfg, JObject description)
+        {
+            if (description.ContainsKey("name_id"))
+            {
+                await _descriptionRepository.GetNameByNameAsync(nameCfg, description.GetValue("name_id").ToString());
+                return await _descriptionRepository.UpdateNameAsync(nameCfg, description);
+            }
+            else
+            {
+                _logger.Error("Not found field 'name_id' of book");
+                throw new ApiNotFoundException("Not found field 'name_id' of book");
+            }
+        }
     }
 }

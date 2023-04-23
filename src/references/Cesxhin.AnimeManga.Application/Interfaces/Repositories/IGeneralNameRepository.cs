@@ -13,6 +13,9 @@ namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
         //Insert
         Task<TGeneralName> InsertNameAsync(string nameCfg, TGeneralName generalName);
 
+        //Update
+        Task<TGeneralName> UpdateNameAsync(string nameCfg, TGeneralName generalName);
+
         //delete
         Task<int> DeleteNameAsync(string nameCfg, string id);
     }

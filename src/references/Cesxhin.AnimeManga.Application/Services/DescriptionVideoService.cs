@@ -264,5 +264,19 @@ namespace Cesxhin.AnimeManga.Application.Services
                 throw new ApiConflictException("Not found field 'name_id' of video");
             }
         }
+
+        public async Task<JObject> UpdateNameAsync(string nameCfg, JObject description)
+        {
+            if (description.ContainsKey("name_id"))
+            {
+                await _descriptionRepository.GetNameByNameAsync(nameCfg, description.GetValue("name_id").ToString());
+                return await _descriptionRepository.UpdateNameAsync(nameCfg, description);
+            }
+            else
+            {
+                _logger.Error("Not found field 'name_id' of video");
+                throw new ApiConflictException("Not found field 'name_id' of video");
+            }
+        }
     }
 }

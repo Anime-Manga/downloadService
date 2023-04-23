@@ -152,5 +152,36 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                 throw new ApiGenericException(ex.Message);
             }
         }
+
+        public async Task<JObject> UpdateNameAsync(string nameCfg, JObject description)
+        {
+            var client = new MongoClient(_connectionString);
+            try
+            {
+                var database = client.GetDatabase(_nameDatabase);
+                var collection = database.GetCollection<BsonDocument>("description_" + GetNameTable(nameCfg));
+                FilterDefinition<BsonDocument> findFilter = Builders<BsonDocument>.Filter.Eq("name_id", (string)description["name_id"]);
+                List<UpdateDefinition<BsonDocument>> update = new();
+
+                update.Add(Builders<BsonDocument>.Update.Set("name_id", (string)description["name_id"]));
+
+                foreach (var field in description)
+                {
+                    if (field.Key == "_id")
+                        continue;
+                    update.Add(Builders<BsonDocument>.Update.Set(field.Key, (string)description[field.Key]));
+                }
+
+                await collection.UpdateOneAsync(findFilter, Builders<BsonDocument>.Update.Combine(update));
+
+                return description;
+            }
+            catch (Exception ex)
+            {
+                client.Cluster.Dispose();
+                _logger.Error($"Failed DeleteNameAsync, details error: {ex.Message}");
+                throw new ApiGenericException(ex.Message);
+            }
+        }
     }
 }

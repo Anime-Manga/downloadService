@@ -30,6 +30,7 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
         //api
         private readonly Api<GenericBookDTO> genericApi = new();
+        private readonly Api<JObject> descriptionApi = new();
         private readonly Api<ChapterDTO> chapterApi = new();
         private readonly Api<ChapterRegisterDTO> chapterRegisterApi = new();
 
@@ -75,7 +76,37 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
                         var urlPage = (string)book.GetValue("url_page");
                         var name_id = (string)book.GetValue("name_id");
 
-                        _logger.Info("Check new episodes for manga: " + urlPage);
+                        _logger.Info($"Check description for book: {name_id}");
+
+                        var description = RipperVideoGeneric.GetDescriptionVideo(schema, urlPage, item.Key);
+                        var descriptionOriginal = JObject.Parse(list.Book);
+
+                        foreach (var field in description)
+                        {
+                            if (!descriptionOriginal.ContainsKey(field.Key))
+                                descriptionOriginal[field.Key] = description[field.Key];
+                            else if (!string.IsNullOrEmpty(description[field.Key].ToString()))
+                                descriptionOriginal[field.Key] = description[field.Key];
+                        }
+
+                        if (description.ToString() != descriptionOriginal.ToString())
+                        {
+                            _logger.Info($"Upgrade description of book: {name_id}");
+
+                            //insert to db
+                            try
+                            {
+                                descriptionApi.PutOne("/book", descriptionOriginal).GetAwaiter().GetResult();
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                            }
+                        }
+
+                        _logger.Info($"End check description for book: {name_id}");
+
+                        _logger.Info($"Check new episodes for book: {urlPage}");
 
                         //check new episode
                         checkChapters = RipperBookGeneric.GetChapters(schema, urlPage, name_id, item.Key);
