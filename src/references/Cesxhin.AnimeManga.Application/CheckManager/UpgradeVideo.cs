@@ -83,29 +83,28 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
                         _logger.Info($"Check description for Video: {name_id}");
 
+                        var videoMerge = video.DeepClone().ToObject<JObject>();
                         var description = RipperVideoGeneric.GetDescriptionVideo(schema, urlPage, item.Key);
-                        var descriptionOriginal = JObject.Parse(list.Video);
 
-                        foreach (var field in description)
+                        videoMerge.Merge(description);
+
+                        foreach (var field in videoMerge)
                         {
-                            if(!descriptionOriginal.ContainsKey(field.Key))
-                                descriptionOriginal[field.Key] = description[field.Key];
-                            else if (!string.IsNullOrEmpty(description[field.Key].ToString()))
-                                descriptionOriginal[field.Key] = description[field.Key];
-                        }
-
-                        if (description.ToString() != descriptionOriginal.ToString())
-                        {
-                            _logger.Info($"Upgrade description of video: {name_id}");
-
-                            //insert to db
-                            try
+                            if (!video.ContainsKey(field.Key) || (string)video[field.Key] != (string)videoMerge[field.Key])
                             {
-                                descriptionApi.PutOne("/video", descriptionOriginal).GetAwaiter().GetResult();
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                                _logger.Info($"Upgrade description of video: {name_id}");
+
+                                //insert to db
+                                try
+                                {
+                                    descriptionApi.PutOne("/video", videoMerge).GetAwaiter().GetResult();
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                                }
+
+                                break;
                             }
                         }
 

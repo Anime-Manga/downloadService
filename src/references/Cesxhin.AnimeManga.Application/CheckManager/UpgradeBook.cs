@@ -78,29 +78,28 @@ namespace Cesxhin.AnimeManga.Application.CheckManager
 
                         _logger.Info($"Check description for book: {name_id}");
 
-                        var description = RipperVideoGeneric.GetDescriptionVideo(schema, urlPage, item.Key);
-                        var descriptionOriginal = JObject.Parse(list.Book);
+                        var bookMerge = book.DeepClone().ToObject<JObject>();
+                        var description = RipperBookGeneric.GetDescriptionBook(schema, urlPage, item.Key);
 
-                        foreach (var field in description)
+                        bookMerge.Merge(description);
+
+                        foreach(var field in bookMerge)
                         {
-                            if (!descriptionOriginal.ContainsKey(field.Key))
-                                descriptionOriginal[field.Key] = description[field.Key];
-                            else if (!string.IsNullOrEmpty(description[field.Key].ToString()))
-                                descriptionOriginal[field.Key] = description[field.Key];
-                        }
-
-                        if (description.ToString() != descriptionOriginal.ToString())
-                        {
-                            _logger.Info($"Upgrade description of book: {name_id}");
-
-                            //insert to db
-                            try
+                            if (!book.ContainsKey(field.Key) || (string)book[field.Key] != (string)bookMerge[field.Key])
                             {
-                                descriptionApi.PutOne("/book", descriptionOriginal).GetAwaiter().GetResult();
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                                _logger.Info($"Upgrade description of book: {name_id}");
+
+                                //insert to db
+                                try
+                                {
+                                    descriptionApi.PutOne("/book", bookMerge).GetAwaiter().GetResult();
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.Fatal($"Error generic put description, details error: {ex.Message}");
+                                }
+
+                                break;
                             }
                         }
 
