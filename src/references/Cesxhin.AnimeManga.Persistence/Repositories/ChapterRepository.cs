@@ -150,7 +150,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
 
                 try
                 {
-                    rs = await connection.UpdateAsync(chapter, e => e.StateDownload == "failed" && e.ID == chapter.ID);
+                    rs = await connection.UpdateAsync(chapter, e => e.ID == chapter.ID);
                 }
                 catch (Exception ex)
                 {
@@ -178,7 +178,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                         chapter.StateDownload = null;
                     });
 
-                    rs = await connection.UpdateAllAsync(chapters, e => e.StateDownload == "failed");
+                    rs = await connection.UpdateAllAsync(chapters);
                 }
                 catch (Exception ex)
                 {

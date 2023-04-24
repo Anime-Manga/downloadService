@@ -155,7 +155,7 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                 try
                 {
 
-                    rs = await connection.UpdateAsync(episode, e => e.StateDownload == "failed" && e.ID == episode.ID);
+                    rs = await connection.UpdateAsync(episode, e => e.ID == episode.ID);
 
                 }
                 catch (Exception ex)
