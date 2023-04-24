@@ -128,10 +128,14 @@ namespace Cesxhin.AnimeManga.Application.Services
             {
                 if (watch.NameCfg == nameCfg)
                 {
-                    resultFind = await _descriptionRepository.GetNameByNameAsync(watch.NameCfg, watch.Name);
+                    try
+                    {
+                        resultFind = await _descriptionRepository.GetNameByNameAsync(watch.NameCfg, watch.Name);
 
-                    if (resultFind != null)
-                        result.Add(resultFind);
+                        if (resultFind != null)
+                            result.Add(resultFind);
+                    }
+                    catch (ApiNotFoundException) { }
                 }
             }
 
