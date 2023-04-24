@@ -172,13 +172,14 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                 int rs = 0;
                 try
                 {
-                    chapters.ForEach(chapter =>
+                    var chaptersUpdate = chapters.Where(e => e.StateDownload != "completed").ToList();
+                    chaptersUpdate.ForEach(e =>
                     {
-                        chapter.PercentualDownload = 0;
-                        chapter.StateDownload = null;
+                        e.PercentualDownload = 0;
+                        e.StateDownload = null;
                     });
 
-                    rs = await connection.UpdateAllAsync(chapters, e => e.StateDownload != "completed");
+                    rs = await connection.UpdateAllAsync(chaptersUpdate);
                 }
                 catch (Exception ex)
                 {

@@ -72,7 +72,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 _logger.Info($"Start download manga {chapter.NameManga} of volume {chapter.CurrentVolume} chapter {chapter.CurrentChapter}");
 
                 //create empty file
-                for (int i = 0; i < chapter.NumberMaxImage; i++)
+                for (int i = 0; i <= chapter.NumberMaxImage; i++)
                 {
                     //check directory
                     var pathWithoutFile = Path.GetDirectoryName(chapterRegister.ChapterPath[i]);
@@ -90,7 +90,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 var tasks = new List<Func<string>>();
 
                 //step one check file
-                for (int i = 0; i < chapter.NumberMaxImage; i++)
+                for (int i = 0; i <= chapter.NumberMaxImage; i++)
                 {
                     var currentImage = i;
                     var path = chapterRegister.ChapterPath[currentImage];
@@ -121,15 +121,10 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 return Task.CompletedTask;
             }
 
-            //end download
-            chapter.PercentualDownload = 100;
-            chapter.StateDownload = "completed";
-            SendStatusDownloadAPIAsync(chapter);
-
             //get hash and update
             _logger.Info($"start calculate hash of chapter id: {chapter.ID}");
             List<string> listHash = new();
-            for (int i = 0; i < chapter.NumberMaxImage; i++)
+            for (int i = 0; i <= chapter.NumberMaxImage; i++)
             {
                 listHash.Add(Hash.GetHash(chapterRegister.ChapterPath[i]));
             }
@@ -149,6 +144,11 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             {
                 _logger.Fatal($"Error generic put episodeRegister, details error: {ex.Message}");
             }
+
+            //end download
+            chapter.PercentualDownload = 100;
+            chapter.StateDownload = "completed";
+            SendStatusDownloadAPIAsync(chapter);
 
             _logger.Info($"Done download manga {chapter.NameManga} of volume {chapter.CurrentVolume} chapter {chapter.CurrentChapter}");
             return Task.CompletedTask;

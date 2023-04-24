@@ -78,12 +78,6 @@ namespace Cesxhin.AnimeManga.Application.Services
         {
             var listChapters = await _chapterRepository.GetObjectsByNameAsync(name);
 
-            foreach (var chapter in listChapters)
-            {
-                chapter.StateDownload = null;
-                chapter.PercentualDownload = 0;
-            }
-
             var resultChapters = await _chapterRepository.ResetStatusDownloadObjectsByIdAsync(listChapters.ToList());
 
             List<ChapterDTO> chaptersDTOConvert = new();

@@ -70,12 +70,6 @@ namespace Cesxhin.AnimeManga.Application.Services
         {
             var listEpisodes = await _episodeRepository.GetObjectsByNameAsync(name);
 
-            foreach (var episode in listEpisodes)
-            {
-                episode.StateDownload = null;
-                episode.PercentualDownload = 0;
-            }
-
             var resultEpisodes = await _episodeRepository.ResetStatusDownloadObjectsByIdAsync(listEpisodes.ToList());
 
             List<EpisodeDTO> episodesDTOConvert = new();
