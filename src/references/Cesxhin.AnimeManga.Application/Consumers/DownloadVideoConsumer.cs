@@ -125,6 +125,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                                     ProxyManagement.BlackListAdd(ip, episode.VideoId);
                                     timeout = 0;
                                     ip = ProxyManagement.GetIp(episode.VideoId);
+                                    _logger.Warn($"Failed download with proxy, try changed it, details: {episode.UrlVideo}");
                                     continue;
                                 }
                                 else
@@ -267,14 +268,18 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         //send status download
                         episode.PercentualDownload = parallel.PercentualCompleted();
                         SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                        if (parallel.checkError(null))
+                        {
+                            parallel.Kill();
+                        }
+
                         Thread.Sleep(3000);
                     }
 
                     buffer = parallel.GetResultAndClear();
 
-                    buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
-
-                    if (buffer == null)
+                    if (buffer.Contains(null))
                     {
                         //send end download
                         episode.StateDownload = "failed";
@@ -284,6 +289,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
                         return;
                     }
+
+                    buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
 
                     List<string> paths = new();
 
@@ -363,6 +370,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             ProxyManagement.BlackListAdd(ip, episode.VideoId);
                             timeout = 0;
                             ip = ProxyManagement.GetIp(episode.VideoId);
+                            _logger.Warn($"Failed download with proxy, try changed it, details: {url}");
                             continue;
                         }
                         else

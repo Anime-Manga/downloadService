@@ -3,6 +3,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Parallel
@@ -15,6 +16,7 @@ namespace Cesxhin.AnimeManga.Application.Parallel
         //variable
         private List<Func<T>> queue = new();
         private readonly List<Task> tasks = new();
+        private readonly CancellationTokenSource tokenSource = new();
 
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
@@ -25,7 +27,7 @@ namespace Cesxhin.AnimeManga.Application.Parallel
         //task id
         private Task process;
 
-        private void Process()
+        private void Process(CancellationToken ct)
         {
             //thread for download parallel
             int capacity = 0;
@@ -33,6 +35,9 @@ namespace Cesxhin.AnimeManga.Application.Parallel
 
             while (queue.Count != 0 || tasks.Count != 0)
             {
+                if (ct.IsCancellationRequested)
+                    ct.ThrowIfCancellationRequested();
+
                 //add task
                 if (capacity < NUMBER_PARALLEL_MAX && queue.Count > 0)
                 {
@@ -80,7 +85,8 @@ namespace Cesxhin.AnimeManga.Application.Parallel
 
         public void Start()
         {
-            process = Task.Run(() => Process());
+            var token = tokenSource.Token;
+            process = Task.Run(() => Process(token), token);
         }
 
         public void AddTasks(List<Func<T>> tasks)
@@ -112,12 +118,31 @@ namespace Cesxhin.AnimeManga.Application.Parallel
         {
             return list;
         }
+
         public List<T> GetResultAndClear()
         {
             List<T> copy = new(list);
             list.Clear();
 
             return copy;
+        }
+
+        public async void Kill()
+        {
+            tokenSource.Cancel();
+
+            while (process.IsCanceled == false)
+            {
+                Thread.Sleep(500);
+            }
+            
+            tasks.Clear();
+            queue.Clear();
+        }
+
+        public bool checkError(T variableError)
+        {
+            return list.Contains(variableError);
         }
 
         public void ClearList()
