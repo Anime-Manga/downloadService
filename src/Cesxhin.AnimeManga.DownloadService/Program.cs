@@ -1,6 +1,7 @@
 using Cesxhin.AnimeManga.Application.Consumers;
 using Cesxhin.AnimeManga.Application.CronJob;
 using Cesxhin.AnimeManga.Application.Generic;
+using Cesxhin.AnimeManga.Application.Proxy;
 using Cesxhin.AnimeManga.Application.Schema;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,16 +17,7 @@ namespace Cesxhin.AnimeManga.DownloadService
         public static void Main(string[] args)
         {
             SchemaControl.Check();
-
-            //check proxy
-
-            var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
-
-            if(enableProxy == "true")
-            {
-                var textProxy = System.IO.File.ReadAllText("proxy.txt");
-                Environment.SetEnvironmentVariable("LIST_PROXY", textProxy);
-            }
+            ProxyManagement.InitProxy();
 
             CreateHostBuilder(args).Build().Run();
         }
