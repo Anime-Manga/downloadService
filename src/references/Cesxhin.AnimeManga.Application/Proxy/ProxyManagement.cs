@@ -37,7 +37,12 @@ namespace Cesxhin.AnimeManga.Application.Proxy
                 var listProxy = System.IO.File.ReadAllText("proxy.txt");
 
                 Environment.SetEnvironmentVariable("LIST_PROXY", listProxy);
-            }
+            } 
+        }
+
+        public static List<string> GetAllIP()
+        {
+            return GetList("LIST_PROXY");
         }
 
         public static string GetIp(string id)

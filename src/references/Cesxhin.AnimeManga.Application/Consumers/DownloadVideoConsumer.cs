@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -97,7 +98,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     using (var client = new MyWebClient())
                     {
                         //set proxy
-                        var ip = ProxyManagement.GetIp(episode.VideoId);
+                        var ip = ProxyManagement.GetAllIP();
 
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
@@ -113,30 +114,23 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                         do
                         {
-                            if (ip != null)
-                                client.Proxy = new WebProxy(new Uri(ip));
+                            if (ProxyManagement.EnableProxy() && ip.Any())
+                            {
+                                client.Proxy = new WebProxy(new Uri(ip.First()));
+                                ip.Remove(ip.First());
+                            }
                             else
                                 client.Proxy = null;
 
+
                             if (timeout >= MAX_DELAY)
                             {
-                                if (ProxyManagement.EnableProxy() && ip != null)
-                                {
-                                    ProxyManagement.BlackListAdd(ip, episode.VideoId);
-                                    timeout = 0;
-                                    ip = ProxyManagement.GetIp(episode.VideoId);
-                                    _logger.Warn($"Failed download with proxy, try changed it, details: {episode.UrlVideo}");
-                                    continue;
-                                }
-                                else
-                                {
-                                    //send api failed download
-                                    episode.StateDownload = "failed";
-                                    SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+                                //send api failed download
+                                episode.StateDownload = "failed";
+                                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                                    _logger.Error($"Failed download, details: {episode.UrlVideo}");
-                                    return null;
-                                }
+                                _logger.Error($"Failed download, details: {episode.UrlVideo}");
+                                return null;
                             }
 
 
@@ -164,11 +158,27 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             }
                             catch (WebException ex)
                             {
-                                _logger.Error(ex);
-                                _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {episode.UrlVideo}");
-                                timeout++;
+                                _logger.Error($"{ex.Message}, failed download {episode.UrlVideo}");
 
-                                Thread.Sleep(DELAY_RETRY_ERROR);
+                                if (client.Proxy == null)
+                                {
+                                    //reset ip
+                                    ip = ProxyManagement.GetAllIP();
+
+                                    //set timeout
+                                    timeout++;
+
+                                    _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {episode.UrlVideo}");
+                                    Thread.Sleep(DELAY_RETRY_ERROR);
+                                }
+                                else
+                                {
+                                    if (ip.Any())
+                                        _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                                    else
+                                        _logger.Warn($"Failed all proxy, try use local network");
+                                    Thread.Sleep(1000);
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -355,41 +365,34 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 client.Timeout = 60000; //? check
 
                 //set proxy
-                var ip = ProxyManagement.GetIp(episode.VideoId);
+                var ip = ProxyManagement.GetAllIP();
+
                 do
                 {
-                    if(ip != null)
-                        client.Proxy = new WebProxy(new Uri(ip));
+                    if(ProxyManagement.EnableProxy() && ip.Any())
+                    {
+                        client.Proxy = new WebProxy(new Uri(ip.First()));
+                        ip.Remove(ip.First());
+                    }
                     else
                         client.Proxy = null;
 
                     if (timeout >= MAX_DELAY)
                     {
-                        if(ProxyManagement.EnableProxy() && ip != null)
-                        {
-                            ProxyManagement.BlackListAdd(ip, episode.VideoId);
-                            timeout = 0;
-                            ip = ProxyManagement.GetIp(episode.VideoId);
-                            _logger.Warn($"Failed download with proxy, try changed it, details: {url}");
-                            continue;
-                        }
-                        else
-                        {
-                            //send api failed download
-                            episode.StateDownload = "failed";
-                            SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+                        //send api failed download
+                        episode.StateDownload = "failed";
+                        SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                            _logger.Error($"Failed download, details: {url}");
+                        _logger.Error($"Failed download, details: {url}");
 
-                            //delete file
-                            //fs.Close();
-                            if (File.Exists(filePath))
-                            {
-                                File.Delete(filePath);
-                                _logger.Warn($"The file is deleted {filePath}");
-                            }
-                            return null;
+                        //delete file
+                        //fs.Close();
+                        if (File.Exists(filePath))
+                        {
+                            File.Delete(filePath);
+                            _logger.Warn($"The file is deleted {filePath}");
                         }
+                        return null;
                     }
 
                     try
@@ -402,13 +405,34 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             Path = $"{pathTemp}/{episode.ID}-{episode.Resolution}-{numberFrame.ToString("D3")}.ts",
                         };
                     }
+                    catch(WebException ex)
+                    {
+                        _logger.Error($"{ex.Message}, failed download {url}");
+
+                        if (client.Proxy == null)
+                        {
+                            //reset ip
+                            ip = ProxyManagement.GetAllIP();
+
+                            //set timeout
+                            timeout++;
+
+                            _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {url}");
+                            Thread.Sleep(DELAY_RETRY_ERROR);
+                        }
+                        else
+                        {
+                            if (ip.Any())
+                                _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                            else
+                                _logger.Warn($"Failed all proxy, try use local network");
+                            Thread.Sleep(1000);
+                        }
+                    }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex);
-                        _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {url}");
-                        timeout++;
-
-                        Thread.Sleep(DELAY_RETRY_ERROR);
+                        _logger.Fatal($"Error generic, details : {ex.Message}");
+                        return null;
                     }
                 } while (true);
             }
