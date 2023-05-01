@@ -20,6 +20,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
         //temp
         private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
+
+        //env
+        private readonly string MAX_THREAD = Environment.GetEnvironmentVariable("MAX_THREAD") ?? "2";
         public Task Consume(ConsumeContext<ConversionDTO> context)
         {
             try
@@ -111,6 +114,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     var process = FFMpegArguments
                         .FromFileInput(fileTemp)
                         .OutputToFile(tempMp4, true, options => options
+                            .UsingThreads(int.Parse(MAX_THREAD))
                             .WithVideoCodec(VideoCodec.LibX264)
                             .WithAudioCodec(AudioCodec.Aac)
                             .WithVideoFilters(filterOptions => filterOptions
