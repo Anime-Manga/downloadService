@@ -57,7 +57,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         public string nameCfg { get; set; }
 
         //convert EpisodeDTO to Episode
-        public Episode EpisodeDTOToEpisode(EpisodeDTO episode)
+        public static Episode EpisodeDTOToEpisode(EpisodeDTO episode)
         {
             return new Episode
             {

@@ -3,6 +3,7 @@ using Cesxhin.AnimeManga.Application.Interfaces.Services;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Services
@@ -22,6 +23,28 @@ namespace Cesxhin.AnimeManga.Application.Services
         {
             var chapterRegister = await _chapterRegisterRepository.GetObjectRegisterByObjectId(id);
             return ChapterRegisterDTO.ChapterRegisterToChapterRegisterDTO(chapterRegister);
+        }
+
+        public async Task<List<ChapterRegisterDTO>> GetObjectsRegistersByListObjectId(List<ChapterDTO> listChapterDTO)
+        {
+            List<Chapter> listChapter = new();
+
+            foreach (var chapterDTO in listChapterDTO)
+            {
+                listChapter.Add(Chapter.ChapterDTOToChapter(chapterDTO));
+            }
+
+            var rs = await _chapterRegisterRepository.GetObjectsRegistersByListObjectId(listChapter);
+
+
+            List<ChapterRegisterDTO> listChapterRegisterDTO = new();
+
+            foreach (var chapterRegister in rs.ToList())
+            {
+                listChapterRegisterDTO.Add(ChapterRegisterDTO.ChapterRegisterToChapterRegisterDTO(chapterRegister));
+            }
+
+            return listChapterRegisterDTO;
         }
 
         //insert chapterRegister

@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Services
 {
-    public interface IChapterRegisterService : IGeneralObjectRegister<ChapterRegisterDTO>
+    public interface IChapterRegisterService : IGeneralObjectRegister<ChapterRegisterDTO, ChapterDTO>
     {
     }
 }

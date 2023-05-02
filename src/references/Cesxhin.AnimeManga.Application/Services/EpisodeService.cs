@@ -42,7 +42,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         //insert one episode
         public async Task<EpisodeDTO> InsertObjectAsync(EpisodeDTO episode)
         {
-            var episodeResult = await _episodeRepository.InsertObjectAsync(new Episode().EpisodeDTOToEpisode(episode));
+            var episodeResult = await _episodeRepository.InsertObjectAsync(Episode.EpisodeDTOToEpisode(episode));
             return EpisodeDTO.EpisodeToEpisodeDTO(episodeResult);
         }
 
@@ -52,7 +52,7 @@ namespace Cesxhin.AnimeManga.Application.Services
             List<EpisodeDTO> resultEpisodes = new();
             foreach (var episode in episodes)
             {
-                var episodeResult = await _episodeRepository.InsertObjectAsync(new Episode().EpisodeDTOToEpisode(episode));
+                var episodeResult = await _episodeRepository.InsertObjectAsync(Episode.EpisodeDTOToEpisode(episode));
                 resultEpisodes.Add(EpisodeDTO.EpisodeToEpisodeDTO(episodeResult));
             }
             return resultEpisodes;
@@ -61,7 +61,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         //reset StatusDownload to null
         public async Task<EpisodeDTO> ResetStatusDownloadObjectByIdAsync(EpisodeDTO episode)
         {
-            var episodeResult = await _episodeRepository.ResetStatusDownloadObjectByIdAsync(new Episode().EpisodeDTOToEpisode(episode));
+            var episodeResult = await _episodeRepository.ResetStatusDownloadObjectByIdAsync(Episode.EpisodeDTOToEpisode(episode));
             return EpisodeDTO.EpisodeToEpisodeDTO(episodeResult);
         }
 
@@ -84,7 +84,7 @@ namespace Cesxhin.AnimeManga.Application.Services
         //update PercentualState
         public async Task<EpisodeDTO> UpdateStateDownloadAsync(EpisodeDTO episode)
         {
-            var episodeResult = await _episodeRepository.UpdateStateDownloadAsync(new Episode().EpisodeDTOToEpisode(episode));
+            var episodeResult = await _episodeRepository.UpdateStateDownloadAsync(Episode.EpisodeDTOToEpisode(episode));
 
             if (episodeResult == null)
                 return null;

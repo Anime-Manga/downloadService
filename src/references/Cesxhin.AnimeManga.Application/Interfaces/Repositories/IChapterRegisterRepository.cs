@@ -2,7 +2,7 @@
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
 {
-    public interface IChapterRegisterRepository : IGeneralObjectRegisterRepository<ChapterRegister>
+    public interface IChapterRegisterRepository : IGeneralObjectRegisterRepository<ChapterRegister, Chapter>
     {
     }
 }

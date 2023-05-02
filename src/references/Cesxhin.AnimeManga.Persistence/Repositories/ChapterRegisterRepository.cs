@@ -5,6 +5,7 @@ using Cesxhin.AnimeManga.Domain.Models;
 using NLog;
 using Npgsql;
 using RepoDb;
+using RepoDb.Enumerations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,6 +107,29 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
                     return chapterRegister;
                 else
                     throw new ApiNotFoundException("Not found UpdateObjectRegisterAsync");
+            }
+        }
+
+        public async Task<IEnumerable<ChapterRegister>> GetObjectsRegistersByListObjectId(List<Chapter> listChapters)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                IEnumerable<ChapterRegister> rs;
+
+                try
+                {
+                    rs = await connection.QueryAsync<ChapterRegister>(new QueryField("chapterid", Operation.In, listChapters.Select(e => e.ID)));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed GetObjectsRegistersByListObjectId, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
+                }
+
+                if (rs != null && rs.Any())
+                    return rs;
+                else
+                    throw new ApiNotFoundException("Not found GetObjectsRegistersByListObjectId");
             }
         }
     }

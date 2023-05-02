@@ -3,10 +3,11 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Interfaces.Repositories
 {
-    public interface IGeneralObjectRegisterRepository<T>
+    public interface IGeneralObjectRegisterRepository<T, F>
     {
         //get
         Task<T> GetObjectRegisterByObjectId(string id);
+        Task<IEnumerable<T>> GetObjectsRegistersByListObjectId(List<F> listObjects);
 
         //insert
         Task<IEnumerable<T>> InsertObjectsRegisterAsync(List<T> objectRegister);
