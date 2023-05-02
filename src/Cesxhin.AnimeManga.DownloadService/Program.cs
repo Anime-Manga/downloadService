@@ -61,6 +61,22 @@ namespace Cesxhin.AnimeManga.DownloadService
                                 });
                             });
 
+                            cfg.ReceiveEndpoint("delete-video", e =>
+                            {
+                                e.Consumer<DeleteVideoConsumer>(cc =>
+                                {
+                                    cc.UseConcurrentMessageLimit(1);
+                                });
+                            });
+
+                            cfg.ReceiveEndpoint("delete-book", e =>
+                            {
+                                e.Consumer<DeleteBookConsumer>(cc =>
+                                {
+                                    cc.UseConcurrentMessageLimit(1);
+                                });
+                            });
+
                         });
                     });
 
