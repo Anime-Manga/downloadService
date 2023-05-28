@@ -6,7 +6,7 @@ using MassTransit;
 using NLog;
 using System;
 using System.IO;
-using System.Text;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Consumers
@@ -28,9 +28,15 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             try
             {
-                if(notify.Image != null)
+                if (notify.Image != null)
                 {
-                    Stream image = new MemoryStream(Convert.FromBase64String(notify.Image));
+                    byte[] bufferImage;
+                    using (WebClient client = new WebClient())
+                    {
+                        bufferImage = client.DownloadData(new Uri(notify.Image));
+                    }
+
+                    Stream image = new MemoryStream(bufferImage);
                     discord.SendFileAsync(image, "Cover.png", notify.Message).GetAwaiter().GetResult();
                 }
                 else

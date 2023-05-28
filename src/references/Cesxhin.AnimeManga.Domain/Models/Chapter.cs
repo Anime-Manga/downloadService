@@ -14,7 +14,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         public string NameManga { get; set; }
 
         [Map("currentvolume")]
-        public int CurrentVolume { get; set; }
+        public float CurrentVolume { get; set; }
 
         [Map("currentchapter")]
         public float CurrentChapter { get; set; }
@@ -31,6 +31,9 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("percentualdownload")]
         public int PercentualDownload { get; set; }
 
+        [Map("namecfg")]
+        public string NameCfg { get; set; }
+
         //convert ChapterDTO to Chapter
         public static Chapter ChapterDTOToChapter(ChapterDTO chapter)
         {
@@ -43,7 +46,8 @@ namespace Cesxhin.AnimeManga.Domain.Models
                 NameManga = chapter.NameManga,
                 StateDownload = chapter.StateDownload,
                 PercentualDownload = chapter.PercentualDownload,
-                NumberMaxImage = chapter.NumberMaxImage
+                NumberMaxImage = chapter.NumberMaxImage,
+                NameCfg = chapter.NameCfg
             };
         }
     }

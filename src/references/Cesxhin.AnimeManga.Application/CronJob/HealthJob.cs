@@ -27,7 +27,8 @@ namespace Cesxhin.AnimeManga.Application.CronJob
                     Interval = 60000
                 }).GetAwaiter().GetResult();
 
-            }catch (ApiGenericException ex)
+            }
+            catch (ApiGenericException ex)
             {
                 _logger.Fatal($"Error api, error details: {ex.Message}");
             }

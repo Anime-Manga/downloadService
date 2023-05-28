@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
+using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Cesxhin.AnimeManga.Application.Exceptions;
 
 namespace Cesxhin.AnimeManga.Application.Generic
 {
@@ -22,11 +24,16 @@ namespace Cesxhin.AnimeManga.Application.Generic
         };
 
         //get one object
-        public async Task<T> GetOne(string path)
+        public async Task<T> GetOne(string path, Dictionary<string, string> query = null)
         {
             using (var client = new HttpClient())
             {
-                var resultHttp = await client.GetAsync($"{_protocol}://{_address}:{_port}{path}");
+                string url = $"{_protocol}://{_address}:{_port}{path}";
+
+                if (query != null)
+                    url = QueryHelpers.AddQueryString(url, query);
+
+                var resultHttp = await client.GetAsync(url);
                 if (resultHttp.IsSuccessStatusCode)
                 {
                     //string to class object
@@ -48,11 +55,13 @@ namespace Cesxhin.AnimeManga.Application.Generic
         }
 
         //get more object
-        public async Task<List<T>> GetMore(string path)
+        public async Task<List<T>> GetMore(string path, Dictionary<string, string> query = null)
         {
             using (var client = new HttpClient())
             {
-                var resultHttp = await client.GetAsync($"{_protocol}://{_address}:{_port}{path}");
+                var url = QueryHelpers.AddQueryString($"{_protocol}://{_address}:{_port}{path}", query);
+
+                var resultHttp = await client.GetAsync(url);
                 if (resultHttp.IsSuccessStatusCode)
                 {
                     //string to class object
@@ -91,9 +100,37 @@ namespace Cesxhin.AnimeManga.Application.Generic
                 else if (resultHttp.StatusCode == HttpStatusCode.Conflict)
                 {
                     throw new ApiNotFoundException(resultHttp.Content.ToString());
-                }else
+                }
+                else
                 {
-                    throw new ApiConflictException(resultHttp.Content.ToString());
+                    throw new ApiConflictException(resultHttp.ReasonPhrase);
+                }
+            }
+        }
+
+        //for JObject
+        public async Task<JObject> PutOne(string path, JObject classDTO)
+        {
+            using (var client = new HttpClient())
+            using (var content = new StringContent(JsonSerializer.Serialize(classDTO.ToString()), System.Text.Encoding.UTF8, "application/json"))
+            {
+                var resultHttp = await client.PutAsync($"{_protocol}://{_address}:{_port}{path}", content);
+                if (resultHttp.IsSuccessStatusCode)
+                {
+                    var contentResponse = await resultHttp.Content.ReadAsStringAsync();
+                    return JObject.Parse(contentResponse);
+                }
+                else if (resultHttp.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new ApiNotFoundException(resultHttp.Content.ToString());
+                }
+                else if (resultHttp.StatusCode == HttpStatusCode.Conflict)
+                {
+                    throw new ApiNotFoundException(resultHttp.Content.ToString());
+                }
+                else
+                {
+                    throw new ApiConflictException(resultHttp.ReasonPhrase);
                 }
             }
         }

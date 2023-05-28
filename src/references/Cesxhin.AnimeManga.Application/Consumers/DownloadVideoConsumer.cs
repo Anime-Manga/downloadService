@@ -2,10 +2,9 @@
 using Cesxhin.AnimeManga.Application.Generic;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Application.Parallel;
+using Cesxhin.AnimeManga.Application.Proxy;
 using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Domain.Models;
-using FFMpegCore;
-using FFMpegCore.Enums;
 using MassTransit;
 using NLog;
 using System;
@@ -19,11 +18,8 @@ using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Application.Consumers
 {
-    public class DownloadAnimeConsumer : IConsumer<EpisodeDTO>
+    public class DownloadVideoConsumer : IConsumer<EpisodeDTO>
     {
-        //const
-        const int LIMIT_TIMEOUT = 10;
-
         //nlog
         private readonly NLogConsole _logger = new(LogManager.GetCurrentClassLogger());
 
@@ -31,8 +27,11 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         private readonly ParallelManager<EpisodeBuffer> parallel = new();
 
         //temp
-        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestAnime\\temp";
+        private string pathTemp = Environment.GetEnvironmentVariable("PATH_TEMP") ?? "D:\\TestVideo\\temp";
 
+        //download
+        private readonly int MAX_DELAY = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY") ?? "5");
+        private readonly int DELAY_RETRY_ERROR = int.Parse(Environment.GetEnvironmentVariable("DELAY_RETRY_ERROR") ?? "10000");
 
         public Task Consume(ConsumeContext<EpisodeDTO> context)
         {
@@ -41,7 +40,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             //api
             Api<EpisodeRegisterDTO> episodeRegisterApi = new();
-            Api<AnimeDTO> animeApi = new();
+            Api<GenericVideoDTO> videoApi = new();
             Api<EpisodeDTO> episodeApi = new();
 
             EpisodeRegisterDTO episodeRegister = null;
@@ -55,7 +54,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             catch (ApiNotFoundException ex)
             {
                 _logger.Error($"Not found episodeRegister, details error: {ex.Message}");
-            }catch (ApiGenericException ex)
+            }
+            catch (ApiGenericException ex)
             {
                 _logger.Fatal($"Impossible error generic get episodeRegister, details error: {ex.Message}");
             }
@@ -75,52 +75,120 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             }
 
             //check duplication messages
-            if (episodeVerify != null && episodeVerify.StateDownload == "pending" )
+            if (episodeVerify != null && episodeVerify.StateDownload == "pending")
             {
                 //paths
                 var directoryPath = Path.GetDirectoryName(episodeRegister.EpisodePath);
-                var filePathTemp = $"{pathTemp}/{Path.GetFileName(episodeRegister.EpisodePath)}";
+                var filePathTemp = Path.GetFullPath($"{pathTemp}/{Path.GetFileName(episodeRegister.EpisodePath)}");
 
                 //check directory
                 if (!Directory.Exists(directoryPath))
                     Directory.CreateDirectory(directoryPath);
 
+                if (!Directory.Exists(Path.GetDirectoryName(filePathTemp)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePathTemp));
+
                 //check type url
                 if (episode.UrlVideo != null)
                 {
+                    //api
+                    Api<EpisodeDTO> episodeDTOApi = new();
+
                     //url with file
                     using (var client = new MyWebClient())
                     {
+                        //set proxy
+                        var ip = ProxyManagement.GetAllIP();
+
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
                         client.DownloadFileCompleted += client_DownloadFileCompleted(filePathTemp, episode);
 
-                        //add referer for download, also recive error 403 forbidden
+                        //setup
+                        int timeout = 0;
 
-                        _logger.Info("try download: " + episode.UrlVideo);
-                        try
+                        //send api failed download
+                        episode.StateDownload = "downloading";
+                        episode.PercentualDownload = 0;
+                        SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                        do
                         {
-                            var anime = animeApi.GetOne($"/anime/name/{episode.AnimeId}").GetAwaiter().GetResult();
+                            if (ProxyManagement.EnableProxy() && ip.Any())
+                            {
+                                client.Proxy = new WebProxy(new Uri(ip.First()));
+                                ip.Remove(ip.First());
+                            }
+                            else
+                                client.Proxy = null;
 
-                            //setup client
-                            client.Headers.Add("Referer", anime.UrlPage);
-                            client.Timeout = 60000; //? check
 
-                            //start download
-                            client.DownloadFileTaskAsync(new Uri(episode.UrlVideo), filePathTemp).ConfigureAwait(false).GetAwaiter().GetResult();
+                            if (timeout >= MAX_DELAY)
+                            {
+                                //send api failed download
+                                episode.StateDownload = "failed";
+                                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                            File.Move(filePathTemp, episodeRegister.EpisodePath, true);
-                        }
-                        catch (ApiNotFoundException ex)
-                        {
-                            _logger.Error($"not found anime so can't set headers referer for download, details: {ex.Message}");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Fatal($"Error download with url easy, details error: {ex.Message}");
-                        }
+                                _logger.Error($"Failed download, details: {episode.UrlVideo}");
+                                return null;
+                            }
+
+
+                            _logger.Info("try download: " + episode.UrlVideo);
+                            try
+                            {
+                                Dictionary<string, string> query = new()
+                                {
+                                    ["nameCfg"] = episode.nameCfg
+                                };
+                                var video = videoApi.GetOne($"/video/name/{episode.VideoId}", query).GetAwaiter().GetResult();
+
+                                //setup client
+                                client.Timeout = 60000; //? check
+
+                                //start download
+                                client.DownloadFileTaskAsync(new Uri(episode.UrlVideo), filePathTemp).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                                File.Move(filePathTemp, episodeRegister.EpisodePath, true);
+                                break;
+                            }
+                            catch (ApiNotFoundException ex)
+                            {
+                                _logger.Error($"Not found anime so can't set headers referer for download, details: {ex.Message}");
+                            }
+                            catch (WebException ex)
+                            {
+                                _logger.Error($"{ex.Message}, failed download {episode.UrlVideo}");
+
+                                if (client.Proxy == null)
+                                {
+                                    //reset ip
+                                    ip = ProxyManagement.GetAllIP();
+
+                                    //set timeout
+                                    timeout++;
+
+                                    _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {episode.UrlVideo}");
+                                    Thread.Sleep(DELAY_RETRY_ERROR);
+                                }
+                                else
+                                {
+                                    if (ip.Any())
+                                        _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                                    else
+                                        _logger.Warn($"Failed all proxy, try use local network");
+                                    Thread.Sleep(1000);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Fatal($"Error download with url easy, details error: {ex.Message}");
+                                timeout = MAX_DELAY;
+                            }
+                        } while (true);
+
                     }
-                    
+
                     //get hash and update
                     _logger.Info($"start calculate hash of episode id: {episode.ID}");
                     string hash = Hash.GetHash(episodeRegister.EpisodePath);
@@ -152,7 +220,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     try
                     {
                         Download(episode, filePathTemp, episodeRegister.EpisodePath, context);
-                    }catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         _logger.Fatal($"Error download with url stream, details error: {ex.Message}");
                     }
@@ -174,7 +243,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             while (true)
             {
-                if (timeoutFile == LIMIT_TIMEOUT)
+                if (timeoutFile >= 10)
                 {
                     //send api failed download
                     episode.StateDownload = "failed";
@@ -182,13 +251,14 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                     throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
                 }
+
                 try
                 {
                     //create file and save to end operation
                     List<EpisodeBuffer> buffer = new();
                     List<Func<EpisodeBuffer>> tasks = new();
 
-                    _logger.Info($"start download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                    _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
 
                     //change by pending to downloading
                     episode.StateDownload = "downloading";
@@ -208,23 +278,29 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         //send status download
                         episode.PercentualDownload = parallel.PercentualCompleted();
                         SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                        if (parallel.checkError(null))
+                        {
+                            parallel.Kill();
+                        }
+
                         Thread.Sleep(3000);
                     }
 
                     buffer = parallel.GetResultAndClear();
 
-                    buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
-
-                    if (buffer == null)
+                    if (buffer.Contains(null))
                     {
                         //send end download
                         episode.StateDownload = "failed";
                         episode.PercentualDownload = 0;
                         SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                        _logger.Error($"failed download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                        _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
                         return;
                     }
+
+                    buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
 
                     List<string> paths = new();
 
@@ -237,7 +313,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         }
                     }
 
-                    _logger.Info($"end download {episode.AnimeId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                    _logger.Info($"end download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
 
                     //send end download
                     episode.StateDownload = "wait conversion";
@@ -288,9 +364,20 @@ namespace Cesxhin.AnimeManga.Application.Consumers
             {
                 client.Timeout = 60000; //? check
 
+                //set proxy
+                var ip = ProxyManagement.GetAllIP();
+
                 do
                 {
-                    if (timeout == LIMIT_TIMEOUT)
+                    if(ProxyManagement.EnableProxy() && ip.Any())
+                    {
+                        client.Proxy = new WebProxy(new Uri(ip.First()));
+                        ip.Remove(ip.First());
+                    }
+                    else
+                        client.Proxy = null;
+
+                    if (timeout >= MAX_DELAY)
                     {
                         //send api failed download
                         episode.StateDownload = "failed";
@@ -307,6 +394,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         }
                         return null;
                     }
+
                     try
                     {
                         var data = client.DownloadData(uri);
@@ -317,14 +405,34 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             Path = $"{pathTemp}/{episode.ID}-{episode.Resolution}-{numberFrame.ToString("D3")}.ts",
                         };
                     }
+                    catch(WebException ex)
+                    {
+                        _logger.Error($"{ex.Message}, failed download {url}");
+
+                        if (client.Proxy == null)
+                        {
+                            //reset ip
+                            ip = ProxyManagement.GetAllIP();
+
+                            //set timeout
+                            timeout++;
+
+                            _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {url}");
+                            Thread.Sleep(DELAY_RETRY_ERROR);
+                        }
+                        else
+                        {
+                            if (ip.Any())
+                                _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                            else
+                                _logger.Warn($"Failed all proxy, try use local network");
+                            Thread.Sleep(1000);
+                        }
+                    }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex);
-                        _logger.Warn($"The attempts remains: {LIMIT_TIMEOUT - timeout} for {url}");
-                        timeout++;
-
-                        //waiting before for re-download
-                        Thread.Sleep(timeout * 1000);
+                        _logger.Fatal($"Error generic, details : {ex.Message}");
+                        return null;
                     }
                 } while (true);
             }
@@ -398,10 +506,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                                 _logger.Error($"cannot delete file {filePath}, details error:{ex.Message}");
                             }
                         }
-
-                        //send failed download
+                        /*//send failed download
                         episode.StateDownload = "failed";
-                        SendStatusDownloadAPIAsync(episode, episodeDTO);
+                        SendStatusDownloadAPIAsync(episode, episodeDTO);*/
                     }
                     else
                     {
@@ -421,11 +528,13 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         {
             try
             {
-                episodeApi.PutOne("/anime/statusDownload", episode).GetAwaiter().GetResult();
-            }catch (ApiNotFoundException ex)
+                episodeApi.PutOne("/video/statusDownload", episode).GetAwaiter().GetResult();
+            }
+            catch (ApiNotFoundException ex)
             {
                 _logger.Error($"Not found episode id: {episode.ID}, details: {ex.Message}");
-            }catch (ApiGenericException ex)
+            }
+            catch (ApiGenericException ex)
             {
                 _logger.Error($"Error generic api, details: {ex.Message}");
             }

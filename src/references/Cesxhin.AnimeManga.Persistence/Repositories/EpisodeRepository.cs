@@ -1,12 +1,14 @@
-﻿using Cesxhin.AnimeManga.Application.Generic;
+﻿using Cesxhin.AnimeManga.Application.Exceptions;
 using Cesxhin.AnimeManga.Application.Interfaces.Repositories;
 using Cesxhin.AnimeManga.Application.NlogManager;
 using Cesxhin.AnimeManga.Domain.Models;
 using NLog;
 using Npgsql;
 using RepoDb;
+using RepoDb.Enumerations;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cesxhin.AnimeManga.Persistence.Repositories
@@ -19,21 +21,50 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         //env
         readonly string _connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
-        //get episode by id
-        public async Task<IEnumerable<Episode>> GetObjectsByIDAsync(string id)
+        public async Task<int> DeleteByNameAsync(string id)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
+
                 try
                 {
-                    var rs = await connection.QueryAsync<Episode>(e => e.ID == id);
-                    return ConvertGeneric<Episode>.ConvertIEnurableToListCollection(rs);
+                    rs = await connection.DeleteAsync<Episode>(e => e.VideoId == id);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _logger.Error($"Failed GetEpisodeByIDAsync, details error: {ex.Message}");
-                    return null;
+                    _logger.Error($"Failed DeleteByNameAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return rs;
+                else
+                    throw new ApiNotFoundException("Not found DeleteByNameAsync");
+            }
+        }
+
+        //get episode by id
+        public async Task<Episode> GetObjectByIDAsync(string id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                IEnumerable<Episode> rs;
+
+                try
+                {
+                    rs = await connection.QueryAsync<Episode>(e => e.ID == id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed GetObjectByIDAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
+                }
+
+                if (rs != null && rs.Any())
+                    return rs.First();
+                else
+                    throw new ApiNotFoundException("Not found GetObjectByIDAsync");
             }
         }
 
@@ -42,23 +73,25 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                IEnumerable<Episode> rs;
+
                 try
                 {
-                    var rs = await connection.QueryMultipleAsync<Episode, Anime>(e => e.AnimeId == name, e=> e.Name == name || e.Surname == name);
-
-                    //create list ienurable to list
-                    var list = ConvertGeneric<Episode>.ConvertIEnurableToListCollection(rs.Item1);
-
-                    //order by asc
-                    list.Sort(delegate (Episode p1, Episode p2){ return p1.NumberEpisodeCurrent.CompareTo(p2.NumberEpisodeCurrent); });
-
-                    return list;
+                    rs = await connection.QueryAsync<Episode>(e => e.VideoId == name, orderBy: OrderField.Parse(new
+                    {
+                        numberepisodecurrent = Order.Ascending
+                    }));
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _logger.Error($"Failed GetEpisodesByNameAsync, details error: {ex.Message}");
-                    return null;
+                    _logger.Error($"Failed GetObjectsByNameAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && rs.Any())
+                    return rs;
+                else
+                    throw new ApiNotFoundException("Not found GetObjectsByNameAsync");
             }
         }
 
@@ -67,16 +100,45 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                object rs = null;
+
                 try
                 {
-                    await connection.InsertAsync(episode);
-                    return episode;
+                    rs = await connection.InsertAsync(episode);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _logger.Error($"Failed InsertEpisodeAsync, details error: {ex.Message}");
-                    return null;
+                    _logger.Error($"Failed InsertObjectAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs != null && !string.IsNullOrEmpty(rs.ToString()))
+                    return episode;
+                else
+                    throw new ApiNotFoundException("Not found InsertObjectAsync");
+            }
+        }
+
+        public async Task<IEnumerable<Episode>> InsertObjectsAsync(List<Episode> episodes)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                int rs = 0;
+
+                try
+                {
+                    rs = await connection.InsertAllAsync(episodes);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed InsertObjectsAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
+                }
+
+                if (rs > 0)
+                    return episodes;
+                else
+                    throw new ApiNotFoundException("Not found InsertObjectsAsync");
             }
         }
 
@@ -85,16 +147,57 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
+
+                episode.PercentualDownload = 0;
+                episode.StateDownload = null;
+
                 try
                 {
-                    await connection.UpdateAsync(episode, e=> e.StateDownload != "completed" && e.PercentualDownload == episode.PercentualDownload && e.ID == episode.ID);
-                    return episode;
+
+                    rs = await connection.UpdateAsync(episode, e => e.StateDownload != "completed" && e.ID == episode.ID);
+
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Failed GetEpisodesByNameAsync, details error: {ex.Message}");
-                    return null;
+                    _logger.Error($"Failed ResetStatusDownloadObjectByIdAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return episode;
+                else
+                    throw new ApiNotFoundException("Not found ResetStatusDownloadObjectByIdAsync");
+            }
+        }
+
+        public async Task<IEnumerable<Episode>> ResetStatusDownloadObjectsByIdAsync(List<Episode> episodes)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                int rs = 0;
+
+                try
+                {
+                    var episodesUpdate = episodes.Where(e => e.StateDownload != "completed").ToList();
+                    episodesUpdate.ForEach((e) =>
+                    {
+                        e.PercentualDownload = 0;
+                        e.StateDownload = null;
+                    });
+
+                    rs = await connection.UpdateAllAsync(episodesUpdate);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed ResetStatusDownloadObjectsByIdAsync, details error: {ex.Message}");
+                    throw new ApiGenericException(ex.Message);
+                }
+
+                if (rs > 0)
+                    return episodes;
+                else
+                    throw new ApiNotFoundException("Not found ResetStatusDownloadObjectsByIdAsync");
             }
         }
 
@@ -103,16 +206,22 @@ namespace Cesxhin.AnimeManga.Persistence.Repositories
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
+                int rs = 0;
+
                 try
                 {
-                    await connection.UpdateAsync(episode);
-                    return episode;
+                    rs = await connection.UpdateAsync(episode);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Error($"Failed UpdateStateDownloadAsync, details error: {ex.Message}");
-                    return null;
+                    throw new ApiGenericException(ex.Message);
                 }
+
+                if (rs > 0)
+                    return episode;
+                else
+                    throw new ApiNotFoundException("Not found UpdateStateDownloadAsync");
             }
         }
     }

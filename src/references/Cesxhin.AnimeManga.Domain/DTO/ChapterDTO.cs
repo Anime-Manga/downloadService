@@ -6,12 +6,13 @@ namespace Cesxhin.AnimeManga.Domain.DTO
     {
         public string ID { get; set; }
         public string NameManga { get; set; }
-        public int CurrentVolume { get; set; }
+        public float CurrentVolume { get; set; }
         public float CurrentChapter { get; set; }
         public int NumberMaxImage { get; set; }
         public string UrlPage { get; set; }
         public string StateDownload { get; set; }
         public int PercentualDownload { get; set; }
+        public string NameCfg { get; set; }
 
         //convert Chapter to ChapterDTO
         public static ChapterDTO ChapterToChapterDTO(Chapter chapter)
@@ -25,7 +26,8 @@ namespace Cesxhin.AnimeManga.Domain.DTO
                 NameManga = chapter.NameManga,
                 PercentualDownload = chapter.PercentualDownload,
                 StateDownload = chapter.StateDownload,
-                NumberMaxImage = chapter.NumberMaxImage
+                NumberMaxImage = chapter.NumberMaxImage,
+                NameCfg = chapter.NameCfg
             };
         }
     }

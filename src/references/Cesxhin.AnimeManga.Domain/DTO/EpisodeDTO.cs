@@ -5,7 +5,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
     public class EpisodeDTO
     {
         public string ID { get; set; }
-        public string AnimeId { get; set; }
+        public string VideoId { get; set; }
         public string UrlVideo { get; set; }
         public int NumberEpisodeCurrent { get; set; }
         public int NumberSeasonCurrent { get; set; }
@@ -25,6 +25,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
         public string PlaylistSources { get; set; }
         public int startNumberBuffer { get; set; } = 0;
         public int endNumberBuffer { get; set; }
+        public string nameCfg { get; set; }
 
         //convert Episode to EpisodeDTO
         public static EpisodeDTO EpisodeToEpisodeDTO(Episode episode)
@@ -32,7 +33,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
             return new EpisodeDTO
             {
                 ID = episode.ID,
-                AnimeId = episode.AnimeId,
+                VideoId = episode.VideoId,
                 UrlVideo = episode.UrlVideo,
                 NumberEpisodeCurrent = episode.NumberEpisodeCurrent,
                 NumberSeasonCurrent = episode.NumberSeasonCurrent,
@@ -43,7 +44,9 @@ namespace Cesxhin.AnimeManga.Domain.DTO
                 Resolution = episode.Resolution,
                 PlaylistSources = episode.PlaylistSources,
                 startNumberBuffer = episode.startNumberBuffer,
-                endNumberBuffer = episode.endNumberBuffer
+                endNumberBuffer = episode.endNumberBuffer,
+                nameCfg = episode.nameCfg
+
             };
         }
     }

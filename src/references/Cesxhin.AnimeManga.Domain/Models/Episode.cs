@@ -10,8 +10,8 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("id")]
         public string ID { get; set; }
 
-        [Map("animeid")]
-        public string AnimeId { get; set; }
+        [Map("videoid")]
+        public string VideoId { get; set; }
 
         [Map("urlvideo")]
         public string UrlVideo { get; set; }
@@ -53,13 +53,16 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("endnumberframe")]
         public int endNumberBuffer { get; set; }
 
+        [Map("namecfg")]
+        public string nameCfg { get; set; }
+
         //convert EpisodeDTO to Episode
-        public Episode EpisodeDTOToEpisode(EpisodeDTO episode)
+        public static Episode EpisodeDTOToEpisode(EpisodeDTO episode)
         {
             return new Episode
             {
                 ID = episode.ID,
-                AnimeId = episode.AnimeId,
+                VideoId = episode.VideoId,
                 UrlVideo = episode.UrlVideo,
                 NumberEpisodeCurrent = episode.NumberEpisodeCurrent,
                 NumberSeasonCurrent = episode.NumberSeasonCurrent,
@@ -70,7 +73,8 @@ namespace Cesxhin.AnimeManga.Domain.Models
                 Resolution = episode.Resolution,
                 PlaylistSources = episode.PlaylistSources,
                 Playlist = episode.Playlist,
-                BaseUrl = episode.BaseUrl
+                BaseUrl = episode.BaseUrl,
+                nameCfg = episode.nameCfg
             };
         }
     }

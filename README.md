@@ -1,7 +1,14 @@
 ## 📩Download Service
 Questo progetto verrà utilizzato per scaricare i video e mettere nella cartella.
 ### Information general:
-- `require` volume mounted on Docker
+> Notes: `require` volume mounted on Docker and se hai abilitato il proxy, nella cartella proxy devi inserire gli indirizzi ip con il comma, come in questo esempio: `http:1111:1234,http:2222:1234`
+
+### Dependencies
+| Services | Required |
+| ------ | ------ |
+| Api | ✅  |
+| RabbitMQ | ✅  |
+
 ### Variabili globali richiesti:
 ```sh
 example:
@@ -20,8 +27,13 @@ example:
     LOG_LEVEL: "Debug|Info|Error" #Info [default]
     WEBHOOK_DISCORD_DEBUG: "url" [not require]
     
+    #--- proxy ---
+    PROXY_ENABLE: "true"
+
     #--- General ---
-    LIMIT_THREAD_PARALLEL: "500" #5 [default]
+    DELAY_RETRY_ERROR: "60000" #10000 [default]
+    MAX_DELAY: "40" #5 [default]
+    LIMIT_THREAD_PARALLEL: "100" #5 [default]
     PATH_TEMP: "/tmp/folder" #D:\\TestAnime\\temp [default]
     BASE_PATH: "/folder/anime" or "D:\\\\Directory\Anime" #/ [default]
 ```

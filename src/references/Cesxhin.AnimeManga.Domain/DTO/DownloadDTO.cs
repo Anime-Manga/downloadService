@@ -3,5 +3,6 @@
     public class DownloadDTO
     {
         public string Url { get; set; }
+        public string nameCfg { get; set; }
     }
 }
