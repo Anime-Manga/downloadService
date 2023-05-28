@@ -19,7 +19,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4.1.1
       with:
-        images: ${{ secrets.DOCKER_USER }}/animemanga-downloadservice:1.0.1_DEV
+        images: ${{ secrets.DOCKER_USER }}/animemanga-downloadservice:latest_DEV
         
     - name: Build the Docker image Download Service
       uses: docker/build-push-action@v3
@@ -27,4 +27,4 @@ jobs:
         context: .
         file: Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_USER }}/animemanga-downloadservice:1.0.1_DEV, ${{ secrets.DOCKER_USER }}/animemanga-downloadservice:latest_DEV
+        tags: ${{ secrets.DOCKER_USER }}/animemanga-downloadservice:latest_DEV
