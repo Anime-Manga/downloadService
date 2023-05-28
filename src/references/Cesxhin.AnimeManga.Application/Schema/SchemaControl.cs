@@ -1,111 +1,205 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Cesxhin.AnimeManga.Application.Schema
 {
     public static class SchemaControl
     {
-        private static List<bool> CheckContent(JObject schema)
-        {
-            List<bool> checkArray = new();
-
-            //check type
-            checkArray.Add(schema.ContainsKey("type") && schema.GetValue("type").Type == JTokenType.Array);
-
-            foreach (var singleType in schema.GetValue("type").ToObject<IEnumerable<string>>())
-                checkArray.Add(checkType(singleType));
-
-            //check child_nodes
-            if (schema.ContainsKey("child_nodes"))
-                checkArray.Add(schema.GetValue("child_nodes").Type == JTokenType.Integer);
-
-            //check path
-            checkArray.Add(schema.ContainsKey("path") && schema.GetValue("path").Type == JTokenType.Array);
-
-            //check attributes
-            if (schema.ContainsKey("attributes"))
-                checkArray.Add(schema.GetValue("attributes").Type == JTokenType.String);
-
-            //check download
-            if (schema.ContainsKey("download"))
-                checkArray.Add(schema.GetValue("download").Type == JTokenType.Boolean);
-
-            return checkArray;
-        }
-
-        private static bool checkType(string type)
-        {
-            switch (type)
-            {
-                case "string":
-                case "image":
-                case "array":
-                case "link":
-                case "video/mp4":
-                case "video/m3u8/script":
-                case "book/link":
-                case "number":
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         public static void Check()
         {
             //check valid schema
             Console.WriteLine("[STARTUP] Check schemas");
             var schemasFile = System.IO.File.ReadAllText("schemas.json");
-            var schemas = JObject.Parse(schemasFile);
-            var checkArray = new List<bool>();
+            var schemaTemplateFile = System.IO.File.ReadAllText("schema_template.json");
 
-            foreach (var schema in schemas)
+            var schema = JObject.Parse(schemasFile);
+            var schemaTemplate = JObject.Parse(schemaTemplateFile);
+
+            CheckRecursive(schema, schemaTemplate, "");
+        }
+
+        private static void CheckRecursive(JObject schema, JObject schemaTemplate, string path)
+        {
+            foreach (var field in schemaTemplate.ToObject<JObject>())
             {
-                var selectSchema = schemas.GetValue(schema.Key).ToObject<JObject>();
-
-                checkArray.Add(selectSchema.ContainsKey("name") && selectSchema.GetValue("name").Type == JTokenType.String);
-                checkArray.Add(selectSchema.ContainsKey("type") && selectSchema.GetValue("type").Type == JTokenType.String);
-                checkArray.Add(selectSchema.ContainsKey("search") && selectSchema.GetValue("search").Type == JTokenType.Object);
-                checkArray.Add(selectSchema.ContainsKey("description") && selectSchema.GetValue("description").Type == JTokenType.Object);
-                checkArray.Add(selectSchema.ContainsKey(selectSchema.GetValue("type").ToString()) && selectSchema.GetValue(selectSchema.GetValue("type").ToString()).Type == JTokenType.Object);
-
-                checkArray.Add(selectSchema.GetValue("description").ToObject<JObject>().ContainsKey("name_id"));
-                checkArray.Add(selectSchema.GetValue("description").ToObject<JObject>().ContainsKey("cover"));
-
-                foreach (var selectDescription in selectSchema.GetValue("description").ToObject<JObject>())
+                if (field.Key == "*" && path != "")
                 {
-                    var description = selectDescription.Value.ToObject<JObject>();
-
-                    checkArray.AddRange(CheckContent(description));
+                    foreach(var fieldSchema in schema.ToObject<JObject>())
+                    {
+                        CheckRules(schema.GetValue(fieldSchema.Key).ToObject<JObject>(), path+"/"+fieldSchema.Key);
+                    }
                 }
-
-                var typeSchema = selectSchema.GetValue(selectSchema.GetValue("type").ToString()).ToObject<JObject>();
-
-                //collection
-                checkArray.Add(typeSchema.ContainsKey("collection") && typeSchema.GetValue("collection").Type == JTokenType.Object);
-                checkArray.AddRange(CheckContent(typeSchema.GetValue("collection").ToObject<JObject>()));
-
-                //procedure
-                checkArray.Add(typeSchema.ContainsKey("procedure") && typeSchema.GetValue("procedure").Type == JTokenType.Object);
-                foreach (var selectDescription in typeSchema.GetValue("procedure").ToObject<JObject>())
+                else
                 {
-                    var step = selectDescription.Value.ToObject<JObject>();
+                    if (field.Key != "*" && !schema.ContainsKey(field.Key))
+                    {
+                        throw new Exception($"Missing this field: {field.Key}");
+                    }
 
-                    checkArray.AddRange(CheckContent(step));
+                    if (field.Value.Type == JTokenType.Object)
+                    {
+                        CheckRecursive(getKeyByField(schema, field.Key), schemaTemplate.GetValue(field.Key).ToObject<JObject>(), path + "/" + field.Key);
+                    }
+                    else
+                    {
+                        //check type
+                        if ((string)field.Value == "string")
+                        {
+                            if (schema.GetValue(field.Key).Type != JTokenType.String)
+                                throw new Exception($"Field {field.Key} isn't type String");
+
+                            //check rules
+                            if (path == "/*" && field.Key == "type")
+                            {
+                                if (schema.Value<string>(field.Key) != "video" && schema.Value<string>(field.Key) != "book")
+                                    throw new Exception($"Field Type is incorrect, please select 'video' or 'book'");
+                            }
+                        }
+                        else if ((string)field.Value == "boolean")
+                        {
+                            if (schema.GetValue(field.Key).Type != JTokenType.Boolean)
+                                throw new Exception($"Field {field.Key} isn't type Boolean");
+                        }
+                        else if ((string)field.Value == "*")
+                        {
+                            CheckRules(schema.Value<JObject>(field.Key), path + "/" + field.Key);
+                        }
+                        else
+                        {
+                            throw new Exception($"Uknow type, error schema template of this field {field.Key}, path: {path}");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void CheckRules(JObject schema, string path)
+        {
+            if (!schema.ContainsKey("type"))
+                throw new Exception("Missing field type for scapring");
+
+            if (!schema.ContainsKey("path"))
+                throw new Exception("Missing field path for scapring");
+
+            if(schema.GetValue("type").Type != JTokenType.Array)
+                throw new Exception("Field type for scapring isn't array");
+
+            if (schema.GetValue("path").Type != JTokenType.Array)
+                throw new Exception("Field path for scapring isn't array");
+
+            var arrayType = schema.GetValue("type").ToObject<IEnumerable<string>>();
+            var arrayPath = schema.GetValue("path").ToObject<IEnumerable<string>>();
+
+            /*if (arrayType.Count() != arrayPath.Count())
+                throw new Exception("Lenght between type and path is different, they should be equal");*/
+
+            foreach (var type in arrayType)
+            {
+                switch (type)
+                {
+                    case "string":
+                        if (schema.ContainsKey("child_nodes"))
+                        {
+                            if (schema.GetValue("child_nodes").Type != JTokenType.Integer)
+                                throw new Exception($"Field child_nodes should be Interger");
+                        }
+                        break;
+                    case "image":
+                        if(!schema.ContainsKey("attributes"))
+                            throw new Exception($"Field attributes missing");
+
+                        if(schema.GetValue("attributes").Type != JTokenType.String)
+                            throw new Exception($"Field attributes should be String");
+
+                        if (schema.ContainsKey("download"))
+                        {
+                            if (schema.GetValue("download").Type != JTokenType.Boolean)
+                                throw new Exception($"Field attributes should be Boolean");
+                        }
+
+                        break;
+
+                    case "array":
+                        if (schema.ContainsKey("attributes"))
+                        {
+                            if (schema.GetValue("attributes").Type != JTokenType.String)
+                                throw new Exception($"Field attributes should be String");
+                        }
+                        break;
+
+                    case "video/m3u8/script":
+                        if (!schema.ContainsKey("startSearch"))
+                            throw new Exception($"Field startSearch missing");
+
+                        if (schema.GetValue("startSearch").Type != JTokenType.String)
+                            throw new Exception($"Field startSearch should be String");
+
+                        if (!schema.ContainsKey("endSearch"))
+                            throw new Exception($"Field endSearch missing");
+
+                        if (schema.GetValue("endSearch").Type != JTokenType.String)
+                            throw new Exception($"Field endSearch should be String");
+                        break;
+                    case "number":
+                        if (schema.ContainsKey("parse"))
+                        {
+                            if (schema.GetValue("parse").Type != JTokenType.String)
+                                throw new Exception($"Field parse should be String");
+
+                            if (schema.Value<string>("parse") != "number" && schema.Value<string>("parse") != "float")
+                                throw new Exception($"Field parse is incorrect, please select 'number' or 'float'");
+                        }
+
+                        if (schema.ContainsKey("removeWords"))
+                        {
+                            if (schema.GetValue("removeWords").Type != JTokenType.String)
+                                throw new Exception($"Field removeWords should be String");
+                        }
+                        break;
+                    case "book/link":
+                        if (!schema.ContainsKey("attributes"))
+                            throw new Exception($"Field attributes missing");
+
+                        if (schema.GetValue("attributes").Type != JTokenType.String)
+                            throw new Exception($"Field attributes should be String");
+
+                        if (schema.ContainsKey("addUrl"))
+                        {
+                            if (schema.GetValue("addUrl").Type != JTokenType.String)
+                                throw new Exception($"Field addUrl should be String");
+                        }
+                        break;
                 }
             }
 
-            var result = checkArray.FindAll(value => value == false);
-
-            if (result.Count > 0)
+            //collection of video or book
+            if(path == "/*/book/collection" || path == "/*/video/collection")
             {
-                Console.WriteLine("[STARTUP] FATAL Wrong schemas");
-                throw new Exception();
-            }
+                if (!schema.ContainsKey("thread"))
+                    throw new Exception($"Field thread missing");
 
-            Environment.SetEnvironmentVariable("SCHEMA", schemasFile);
-            Console.WriteLine("[STARTUP] Ok schemas");
+                if (schema.GetValue("thread").Type != JTokenType.Boolean)
+                    throw new Exception($"Field thread should be Boolean");
+
+                if (schema.ContainsKey("reverseCount"))
+                {
+                    if (schema.GetValue("reverseCount").Type != JTokenType.Boolean)
+                        throw new Exception($"Field reverseCount should be Boolean");
+                }
+            }
+        }
+
+        private static JObject getKeyByField(JObject schema, string field)
+        {
+            if (field == "*")
+            {
+                var name = ((JProperty)schema.First).Name.ToString();
+                return schema.GetValue(name).ToObject<JObject>();
+            }
+            else
+                return schema.GetValue(field).ToObject<JObject>();
         }
     }
 }
