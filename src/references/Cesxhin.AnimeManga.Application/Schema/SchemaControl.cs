@@ -18,6 +18,8 @@ namespace Cesxhin.AnimeManga.Application.Schema
             var schemaTemplate = JObject.Parse(schemaTemplateFile);
 
             CheckRecursive(schema, schemaTemplate, "");
+
+            Environment.SetEnvironmentVariable("SCHEMA", schemasFile);
         }
 
         private static void CheckRecursive(JObject schema, JObject schemaTemplate, string path)
