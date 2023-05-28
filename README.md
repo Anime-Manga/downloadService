@@ -1,8 +1,14 @@
 ## 📩Download Service
 Questo progetto verrà utilizzato per scaricare i video e mettere nella cartella.
 ### Information general:
-- `require` volume mounted on Docker
-- Se hai abilitato il proxy, nella cartella proxy dovete inserire gli indirizzi ip con il comma, come in questo esempio: `http:1111:1234,http:2222:1234`
+> Notes: `require` volume mounted on Docker and se hai abilitato il proxy, nella cartella proxy devi inserire gli indirizzi ip con il comma, come in questo esempio: `http:1111:1234,http:2222:1234`
+
+### Dependencies
+| Services | Required |
+| ------ | ------ |
+| Api | ✅  |
+| RabbitMQ | ✅  |
+
 ### Variabili globali richiesti:
 ```sh
 example:
