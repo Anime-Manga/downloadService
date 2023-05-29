@@ -10,9 +10,11 @@ namespace Cesxhin.AnimeManga.Domain.Models
         [Map("name")]
         public string Name { get; set; }
 
+        [Identity]
         [Map("username")]
         public string Username { get; set; }
 
+        [Identity]
         [Map("namecfg")]
         public string NameCfg { get; set; }
 

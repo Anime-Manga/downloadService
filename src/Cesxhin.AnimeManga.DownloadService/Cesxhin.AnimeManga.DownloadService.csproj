@@ -5,9 +5,6 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="C:\Users\matti\.nuget\packages\nlog.config\4.7.14\contentFiles\any\any\NLog.config" />
-  </ItemGroup>
-  <ItemGroup>
     <_WebToolingArtifacts Remove="Properties\launchSettings.json" />
   </ItemGroup>
   <ItemGroup>
@@ -21,6 +18,7 @@
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.4.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\references\Cesxhin.AnimeManga.Application\Cesxhin.AnimeManga.Application.csproj" />
+    <ProjectReference Include="..\Cesxhin.AnimeManga.Application\Cesxhin.AnimeManga.Application.csproj" />
+	<ProjectReference Include="..\references\Cesxhin.AnimeManga.Modules\Cesxhin.AnimeManga.Modules.csproj" />
   </ItemGroup>
 </Project>
