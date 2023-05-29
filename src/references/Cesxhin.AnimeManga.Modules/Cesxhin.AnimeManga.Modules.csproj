@@ -21,5 +21,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Cesxhin.AnimeManga.Domain\Cesxhin.AnimeManga.Domain.csproj" />
   </ItemGroup>
-
 </Project>
