@@ -19,6 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cesxhin.AnimeManga.Application\Cesxhin.AnimeManga.Application.csproj" />
-	<ProjectReference Include="..\..\..\references\src\Cesxhin.AnimeManga.Modules\Cesxhin.AnimeManga.Modules.csproj" /> 
+	<ProjectReference Include="..\references\Cesxhin.AnimeManga.Modules\Cesxhin.AnimeManga.Modules.csproj" /> 
   </ItemGroup>
 </Project>
