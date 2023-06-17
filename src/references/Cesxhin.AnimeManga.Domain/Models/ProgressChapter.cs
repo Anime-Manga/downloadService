@@ -6,7 +6,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
     [Map("progresschapter")]
     public class ProgressChapter
     {
-        [Identity]
+        [Primary]
         [Map("id")]
         public string ID { get; set; }
         [Map("username")]
