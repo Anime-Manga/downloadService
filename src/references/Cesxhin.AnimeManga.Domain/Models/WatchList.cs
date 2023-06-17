@@ -6,13 +6,15 @@ namespace Cesxhin.AnimeManga.Domain.Models
     [Map("whitelist")]
     public class WatchList
     {
-        [Identity]
+        [Primary]
         [Map("name")]
         public string Name { get; set; }
 
+        [Primary]
         [Map("username")]
         public string Username { get; set; }
 
+        [Primary]
         [Map("namecfg")]
         public string NameCfg { get; set; }
 

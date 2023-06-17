@@ -6,7 +6,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
     [Map("chapter")]
     public class Chapter
     {
-        [Identity]
+        [Primary]
         [Map("id")]
         public string ID { get; set; }
 

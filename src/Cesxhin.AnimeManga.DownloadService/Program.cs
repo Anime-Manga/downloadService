@@ -1,8 +1,8 @@
 using Cesxhin.AnimeManga.Application.Consumers;
-using Cesxhin.AnimeManga.Application.CronJob;
-using Cesxhin.AnimeManga.Application.Generic;
-using Cesxhin.AnimeManga.Application.Proxy;
-using Cesxhin.AnimeManga.Application.Schema;
+using Cesxhin.AnimeManga.Modules.CronJob;
+using Cesxhin.AnimeManga.Modules.Generic;
+using Cesxhin.AnimeManga.Modules.Proxy;
+using Cesxhin.AnimeManga.Modules.Schema;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,42 +41,47 @@ namespace Cesxhin.AnimeManga.DownloadService
                                     credentials.Password(Environment.GetEnvironmentVariable("PASSWORD_RABBIT") ?? "guest");
                                 });
 
-                            cfg.ReceiveEndpoint("download-video", e =>
+                            if ((Environment.GetEnvironmentVariable("ENABLE_VIDEO") ?? "true") == "true")
                             {
-                                e.Consumer<DownloadVideoConsumer>(cc =>
+                                cfg.ReceiveEndpoint("download-video", e =>
                                 {
-                                    string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
+                                    e.Consumer<DownloadVideoConsumer>(cc =>
+                                    {
+                                        string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
-                                    cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                    });
                                 });
-                            });
 
-                            cfg.ReceiveEndpoint("download-book", e =>
+                                cfg.ReceiveEndpoint("delete-video", e =>
+                                {
+                                    e.Consumer<DeleteVideoConsumer>(cc =>
+                                    {
+                                        cc.UseConcurrentMessageLimit(1);
+                                    });
+                                });
+                            }
+
+                            if ((Environment.GetEnvironmentVariable("ENABLE_BOOK") ?? "true") == "true")
                             {
-                                e.Consumer<DownloadBookConsumer>(cc =>
+                                cfg.ReceiveEndpoint("download-book", e =>
                                 {
-                                    string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
+                                    e.Consumer<DownloadBookConsumer>(cc =>
+                                    {
+                                        string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
-                                    cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                    });
                                 });
-                            });
 
-                            cfg.ReceiveEndpoint("delete-video", e =>
-                            {
-                                e.Consumer<DeleteVideoConsumer>(cc =>
+                                cfg.ReceiveEndpoint("delete-book", e =>
                                 {
-                                    cc.UseConcurrentMessageLimit(1);
+                                    e.Consumer<DeleteBookConsumer>(cc =>
+                                    {
+                                        cc.UseConcurrentMessageLimit(1);
+                                    });
                                 });
-                            });
-
-                            cfg.ReceiveEndpoint("delete-book", e =>
-                            {
-                                e.Consumer<DeleteBookConsumer>(cc =>
-                                {
-                                    cc.UseConcurrentMessageLimit(1);
-                                });
-                            });
-
+                            }
                         });
                     });
 

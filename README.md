@@ -36,4 +36,6 @@ example:
     LIMIT_THREAD_PARALLEL: "100" #5 [default]
     PATH_TEMP: "/tmp/folder" #D:\\TestAnime\\temp [default]
     BASE_PATH: "/folder/anime" or "D:\\\\Directory\Anime" #/ [default]
+    ENABLE_VIDEO: "false" #true [default]
+    ENABLE_BOOK: "true" #true [default]
 ```
