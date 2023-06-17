@@ -6,7 +6,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
     [Map("account")]
     public class Auth
     {
-        [Identity]
+        [Primary]
         [Map("username")]
         public string Username { get; set; }
 
