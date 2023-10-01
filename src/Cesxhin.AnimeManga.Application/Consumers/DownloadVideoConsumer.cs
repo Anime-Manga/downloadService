@@ -33,8 +33,14 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         private readonly int MAX_DELAY = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY") ?? "5");
         private readonly int DELAY_RETRY_ERROR = int.Parse(Environment.GetEnvironmentVariable("DELAY_RETRY_ERROR") ?? "10000");
 
+        //proxy
+        private readonly ProxyManagement proxyManagement = new();
+
         public Task Consume(ConsumeContext<EpisodeDTO> context)
         {
+            //init proxy
+            proxyManagement.InitProxy();
+
             //get body
             var episode = context.Message;
 
@@ -98,7 +104,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     using (var client = new MyWebClient())
                     {
                         //set proxy
-                        var ip = ProxyManagement.GetAllIP();
+                        var ip = proxyManagement.GetIp();
 
                         //task
                         client.DownloadProgressChanged += client_DownloadProgressChanged(filePathTemp, episode);
@@ -114,10 +120,9 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                         do
                         {
-                            if (ProxyManagement.EnableProxy() && ip.Any())
+                            if (proxyManagement.EnableProxy() && !String.IsNullOrEmpty(ip))
                             {
-                                client.Proxy = new WebProxy(new Uri(ip.First()));
-                                ip.Remove(ip.First());
+                                client.Proxy = new WebProxy(new Uri(ip));
                             }
                             else
                                 client.Proxy = null;
@@ -163,7 +168,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                                 if (client.Proxy == null)
                                 {
                                     //reset ip
-                                    ip = ProxyManagement.GetAllIP();
+                                    ip = proxyManagement.GetIp();
 
                                     //set timeout
                                     timeout++;
@@ -173,8 +178,12 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                                 }
                                 else
                                 {
-                                    if (ip.Any())
-                                        _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                                    //add blacklist
+                                    proxyManagement.BlackListAdd(ip);
+                                    ip = proxyManagement.GetIp();
+
+                                    if (ip != null)
+                                        _logger.Warn($"Failed download, try change proxy: {ip}");
                                     else
                                         _logger.Warn($"Failed all proxy, try use local network");
                                     Thread.Sleep(1000);
@@ -365,14 +374,13 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 client.Timeout = 60000; //? check
 
                 //set proxy
-                var ip = ProxyManagement.GetAllIP();
+                var ip = proxyManagement.GetIp();
 
                 do
                 {
-                    if(ProxyManagement.EnableProxy() && ip.Any())
+                    if(proxyManagement.EnableProxy() && !String.IsNullOrEmpty(ip))
                     {
-                        client.Proxy = new WebProxy(new Uri(ip.First()));
-                        ip.Remove(ip.First());
+                        client.Proxy = new WebProxy(new Uri(ip));
                     }
                     else
                         client.Proxy = null;
@@ -412,7 +420,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         if (client.Proxy == null)
                         {
                             //reset ip
-                            ip = ProxyManagement.GetAllIP();
+                            ip = proxyManagement.GetIp();
 
                             //set timeout
                             timeout++;
@@ -422,8 +430,12 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                         }
                         else
                         {
-                            if (ip.Any())
-                                _logger.Warn($"Failed download, try change proxy: {ip.First()}");
+                            //add blacklist
+                            proxyManagement.BlackListAdd(ip);
+                            ip = proxyManagement.GetIp();
+
+                            if (ip != null)
+                                _logger.Warn($"Failed download, try change proxy: {ip}");
                             else
                                 _logger.Warn($"Failed all proxy, try use local network");
                             Thread.Sleep(1000);

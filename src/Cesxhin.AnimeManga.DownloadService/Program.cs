@@ -1,7 +1,6 @@
 using Cesxhin.AnimeManga.Application.Consumers;
 using Cesxhin.AnimeManga.Modules.CronJob;
 using Cesxhin.AnimeManga.Modules.Generic;
-using Cesxhin.AnimeManga.Modules.Proxy;
 using Cesxhin.AnimeManga.Modules.Schema;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,6 @@ namespace Cesxhin.AnimeManga.DownloadService
         public static void Main(string[] args)
         {
             SchemaControl.Check();
-            ProxyManagement.InitProxy();
 
             CreateHostBuilder(args).Build().Run();
         }
