@@ -132,12 +132,16 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                             if (proxyManagement.EnableProxy() && !string.IsNullOrEmpty(ip))
                             {
+                                _logger.Info($"Use proxy {ip} for {episode.UrlVideo}");
                                 client.Proxy = new WebProxy(new Uri(ip));
                             }
                             else
+                            {
                                 client.Proxy = null;
+                                _logger.Info($"Use internet local for {episode.UrlVideo}");
+                            }
 
-                            _logger.Info("try download: " + episode.UrlVideo);
+                            _logger.Debug("try download: " + episode.UrlVideo);
                             try
                             {
                                 Dictionary<string, string> query = new()
@@ -275,7 +279,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     List<EpisodeBuffer> buffer = new();
                     List<Func<EpisodeBuffer>> tasks = new();
 
-                    _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                    _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent} ");
 
                     //change by pending to downloading
                     episode.StateDownload = "downloading";
@@ -386,12 +390,18 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
                 do
                 {
-                    if(proxyManagement.EnableProxy() && !String.IsNullOrEmpty(ip))
+                    if (proxyManagement.EnableProxy() && !string.IsNullOrEmpty(ip))
                     {
+                        _logger.Info($"Use proxy {ip} for {episode.UrlVideo}");
                         client.Proxy = new WebProxy(new Uri(ip));
                     }
                     else
+                    {
                         client.Proxy = null;
+                        _logger.Info($"Use internet local for {episode.UrlVideo}");
+                    }
+
+                    _logger.Debug("try download: " + episode.UrlVideo);
 
                     if (timeout >= MAX_DELAY)
                     {

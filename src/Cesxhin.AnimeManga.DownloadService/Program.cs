@@ -1,4 +1,5 @@
 using Cesxhin.AnimeManga.Application.Consumers;
+using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Modules.CronJob;
 using Cesxhin.AnimeManga.Modules.Generic;
 using Cesxhin.AnimeManga.Modules.Schema;
@@ -48,6 +49,7 @@ namespace Cesxhin.AnimeManga.DownloadService
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
                                         cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.Message<EpisodeDTO>(m => m.UseDelayedRedelivery(Retry.Interval(10, TimeSpan.FromSeconds(10))));
                                     });
                                 });
 
@@ -69,6 +71,7 @@ namespace Cesxhin.AnimeManga.DownloadService
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
                                         cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.Message<ChapterDTO>(m => m.UseDelayedRedelivery(Retry.Interval(10, TimeSpan.FromSeconds(10))));
                                     });
                                 });
 
