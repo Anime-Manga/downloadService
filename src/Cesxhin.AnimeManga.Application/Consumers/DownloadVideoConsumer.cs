@@ -392,16 +392,16 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                 {
                     if (proxyManagement.EnableProxy() && !string.IsNullOrEmpty(ip))
                     {
-                        _logger.Info($"Use proxy {ip} for {episode.UrlVideo}");
+                        _logger.Info($"Use proxy {ip} for {episode.BaseUrl}");
                         client.Proxy = new WebProxy(new Uri(ip));
                     }
                     else
                     {
                         client.Proxy = null;
-                        _logger.Info($"Use internet local for {episode.UrlVideo}");
+                        _logger.Info($"Use internet local for {episode.BaseUrl}");
                     }
 
-                    _logger.Debug("try download: " + episode.UrlVideo);
+                    _logger.Debug("try download: " + episode.BaseUrl);
 
                     if (timeout >= MAX_DELAY)
                     {
@@ -465,7 +465,7 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                             }
                             else
                             {
-                                _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {episode.UrlVideo} with proxy {ip}");
+                                _logger.Warn($"The attempts remains: {MAX_DELAY - timeout} for {episode.BaseUrl} with proxy {ip}");
                                 Thread.Sleep(DELAY_RETRY_ERROR);
                             }
                         }
