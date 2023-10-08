@@ -44,6 +44,7 @@ namespace Cesxhin.AnimeManga.DownloadService
                             {
                                 cfg.ReceiveEndpoint("download-video", e =>
                                 {
+                                    e.EnablePriority(255);
                                     e.Consumer<DownloadVideoConsumer>(cc =>
                                     {
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
@@ -66,6 +67,7 @@ namespace Cesxhin.AnimeManga.DownloadService
                             {
                                 cfg.ReceiveEndpoint("download-book", e =>
                                 {
+                                    e.EnablePriority(255);
                                     e.Consumer<DownloadBookConsumer>(cc =>
                                     {
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
