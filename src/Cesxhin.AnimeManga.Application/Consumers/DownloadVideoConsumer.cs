@@ -316,30 +316,29 @@ namespace Cesxhin.AnimeManga.Application.Consumers
 
             foreach (var singleBuffer in buffer)
             {
-                using (var fsBuffer = new FileStream(singleBuffer.Path, FileMode.OpenOrCreate, FileAccess.Write))
+                using var fsBuffer = new FileStream(singleBuffer.Path, FileMode.OpenOrCreate, FileAccess.Write);
+                while (true)
                 {
-                    while (true)
+                    if (timeoutFile >= 10)
                     {
-                        if (timeoutFile >= 10)
-                        {
-                            //send api failed download
-                            episode.StateDownload = "failed";
-                            SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+                        //send api failed download
+                        episode.StateDownload = "failed";
+                        SendStatusDownloadAPIAsync(episode, episodeDTOApi);
 
-                            throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
-                        }
+                        throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
+                    }
 
-                        try
-                        {
-                            fsBuffer.Write(singleBuffer.Data);
-                            paths.Add(singleBuffer.Path);
-                        }
-                        catch (IOException ex)
-                        {
-                            _logger.Error($"{filePathTemp} can't open, the attempts remains: {10 - timeoutFile} , details: {ex.Message}");
-                            Thread.Sleep(1000);
-                            timeoutFile++;
-                        }
+                    try
+                    {
+                        fsBuffer.Write(singleBuffer.Data);
+                        paths.Add(singleBuffer.Path);
+                        break;
+                    }
+                    catch (IOException ex)
+                    {
+                        _logger.Error($"{filePathTemp} can't open, the attempts remains: {10 - timeoutFile} , details: {ex.Message}");
+                        Thread.Sleep(1000);
+                        timeoutFile++;
                     }
                 }
             }
