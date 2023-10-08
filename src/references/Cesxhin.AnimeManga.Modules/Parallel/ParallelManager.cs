@@ -39,7 +39,7 @@ namespace Cesxhin.AnimeManga.Modules.Parallel
                     ct.ThrowIfCancellationRequested();
 
                 //add task
-                if (capacity < NUMBER_PARALLEL_MAX && queue.Count > 0)
+                while(capacity < NUMBER_PARALLEL_MAX && queue.Count > 0)
                 {
                     var task = queue.First();
 
@@ -79,6 +79,7 @@ namespace Cesxhin.AnimeManga.Modules.Parallel
                         tasks.Remove(task);
                     }
 
+                    Thread.Sleep(1000);
                 } while (capacity >= NUMBER_PARALLEL_MAX);
             }
         }
