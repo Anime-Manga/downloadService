@@ -241,8 +241,8 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     }
                     catch (Exception ex)
                     {
-                        return Task.CompletedTask;
                         _logger.Fatal($"Error download with url stream, details error: {ex.Message}");
+                        throw new Exception($"Error download with url stream, details error: {ex.Message}");
                     }
                 }
 
@@ -258,120 +258,117 @@ namespace Cesxhin.AnimeManga.Application.Consumers
         //download url with files stream
         private async void Download(EpisodeDTO episode, string filePathTemp, string filePath, ConsumeContext<EpisodeDTO> context)
         {
-            //timeout if not response one resource and close with status failed
-            int timeoutFile = 0;
-
             //api
             Api<EpisodeDTO> episodeDTOApi = new();
 
-            while (true)
-            {
-                if (timeoutFile >= 10)
-                {
-                    //send api failed download
-                    episode.StateDownload = "failed";
-                    SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+            //create file and save to end operation
+            List<EpisodeBuffer> buffer = new();
+            List<Func<EpisodeBuffer>> tasks = new();
 
-                    throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
+            _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent} ");
+
+            //change by pending to downloading
+            episode.StateDownload = "downloading";
+            SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+            for (int numberFrame = episode.startNumberBuffer; numberFrame < episode.endNumberBuffer; numberFrame++)
+            {
+                var numberFrameSave = numberFrame;
+                tasks.Add(new Func<EpisodeBuffer>(() => { return DownloadBuffParallel(episode, numberFrameSave, filePathTemp, episodeDTOApi, context); }));
+            }
+
+            parallel.AddTasks(tasks);
+            parallel.Start();
+
+            while (!parallel.CheckFinish())
+            {
+                //send status download
+                episode.PercentualDownload = parallel.PercentualCompleted();
+                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                if (parallel.checkError(null))
+                {
+                    parallel.Kill();
                 }
 
-                try
+                Thread.Sleep(3000);
+            }
+
+            buffer = parallel.GetResultAndClear();
+
+            if (buffer.Contains(null))
+            {
+                //send end download
+                episode.StateDownload = "failed";
+                episode.PercentualDownload = 0;
+                SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+                return;
+            }
+
+            buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
+
+
+            //timeout if not response one resource and close with status failed
+            int timeoutFile = 0;
+            List<string> paths = new();
+
+            foreach (var singleBuffer in buffer)
+            {
+                using (var fsBuffer = new FileStream(singleBuffer.Path, FileMode.OpenOrCreate, FileAccess.Write))
                 {
-                    //create file and save to end operation
-                    List<EpisodeBuffer> buffer = new();
-                    List<Func<EpisodeBuffer>> tasks = new();
-
-                    _logger.Info($"start download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent} ");
-
-                    //change by pending to downloading
-                    episode.StateDownload = "downloading";
-                    SendStatusDownloadAPIAsync(episode, episodeDTOApi);
-
-                    for (int numberFrame = episode.startNumberBuffer; numberFrame < episode.endNumberBuffer; numberFrame++)
+                    while (true)
                     {
-                        var numberFrameSave = numberFrame;
-                        tasks.Add(new Func<EpisodeBuffer>(() => { return DownloadBuffParallel(episode, numberFrameSave, filePathTemp, episodeDTOApi, context); }));
-                    }
-
-                    parallel.AddTasks(tasks);
-                    parallel.Start();
-
-                    while (!parallel.CheckFinish())
-                    {
-                        //send status download
-                        episode.PercentualDownload = parallel.PercentualCompleted();
-                        SendStatusDownloadAPIAsync(episode, episodeDTOApi);
-
-                        if (parallel.checkError(null))
+                        if (timeoutFile >= 10)
                         {
-                            parallel.Kill();
+                            //send api failed download
+                            episode.StateDownload = "failed";
+                            SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+                            throw new Exception($"{filePathTemp} impossible open file, contact administrator please");
                         }
 
-                        Thread.Sleep(3000);
-                    }
-
-                    buffer = parallel.GetResultAndClear();
-
-                    if (buffer.Contains(null))
-                    {
-                        //send end download
-                        episode.StateDownload = "failed";
-                        episode.PercentualDownload = 0;
-                        SendStatusDownloadAPIAsync(episode, episodeDTOApi);
-
-                        _logger.Error($"failed download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
-                        return;
-                    }
-
-                    buffer.Sort(delegate (EpisodeBuffer p1, EpisodeBuffer p2) { return p1.Id.CompareTo(p2.Id); });
-
-                    List<string> paths = new();
-
-                    foreach (var singleBuffer in buffer)
-                    {
-                        using (var fsBuffer = new FileStream(singleBuffer.Path, FileMode.OpenOrCreate, FileAccess.Write))
+                        try
                         {
                             fsBuffer.Write(singleBuffer.Data);
                             paths.Add(singleBuffer.Path);
                         }
-                    }
-
-                    _logger.Info($"end download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
-
-                    //send end download
-                    episode.StateDownload = "wait conversion";
-                    episode.PercentualDownload = 100;
-                    SendStatusDownloadAPIAsync(episode, episodeDTOApi);
-
-                    //send message to ConversionService;
-                    try
-                    {
-                        var conversionDTO = new ConversionDTO
+                        catch (IOException ex)
                         {
-                            ID = episode.ID,
-                            Paths = paths,
-                            FilePath = filePath
-                        };
-
-                        await context.Publish(conversionDTO);
+                            _logger.Error($"{filePathTemp} can't open, the attempts remains: {10 - timeoutFile} , details: {ex.Message}");
+                            Thread.Sleep(1000);
+                            timeoutFile++;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.Error($"Cannot send message rabbit, details: {ex.Message}");
-                    }
-
-                    return;
-                }
-                catch (IOException ex)
-                {
-                    _logger.Error($"{filePathTemp} can't open, details: {ex.Message}");
-                    timeoutFile++;
-                }
-                catch (Exception ex)
-                {
-                    _logger.Fatal($"{filePathTemp} can't open, details: {ex.Message}");
                 }
             }
+
+            _logger.Info($"end download {episode.VideoId} s{episode.NumberSeasonCurrent}-e{episode.NumberEpisodeCurrent}");
+
+            //send end download
+            episode.StateDownload = "wait conversion";
+            episode.PercentualDownload = 100;
+            SendStatusDownloadAPIAsync(episode, episodeDTOApi);
+
+            //send message to ConversionService;
+            try
+            {
+                var conversionDTO = new ConversionDTO
+                {
+                    ID = episode.ID,
+                    Paths = paths,
+                    FilePath = filePath
+                };
+
+                await context.Publish(conversionDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Cannot send message to conversionService, details: {ex.Message}");
+            }
+
+            return;
         }
 
         private EpisodeBuffer DownloadBuffParallel(EpisodeDTO episode, int numberFrame, string filePath, Api<EpisodeDTO> episodeDTOApi, ConsumeContext<EpisodeDTO> context)
