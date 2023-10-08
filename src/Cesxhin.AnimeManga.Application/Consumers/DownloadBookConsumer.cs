@@ -106,51 +106,56 @@ namespace Cesxhin.AnimeManga.Application.Consumers
                     SendStatusDownloadAPIAsync(chapter);
                     Thread.Sleep(3000);
                 }
-            }
 
-            var result = parallel.GetResultAndClear();
+                var result = parallel.GetResultAndClear();
 
-            if (result.Contains("failed"))
-            {
-                //send failed download
-                chapter.StateDownload = "failed";
-                chapter.PercentualDownload = 0;
+                if (result.Contains("failed"))
+                {
+                    //send failed download
+                    chapter.StateDownload = "failed";
+                    chapter.PercentualDownload = 0;
+                    SendStatusDownloadAPIAsync(chapter);
+
+                    _logger.Error($"failed download {chapter.ID} v{chapter.CurrentVolume}-c{chapter.CurrentChapter}");
+                    throw new Exception($"failed download {chapter.ID} v{chapter.CurrentVolume}-c{chapter.CurrentChapter}");
+                }
+
+                //get hash and update
+                _logger.Info($"start calculate hash of chapter id: {chapter.ID}");
+                List<string> listHash = new();
+                for (int i = 0; i <= chapter.NumberMaxImage; i++)
+                {
+                    listHash.Add(Hash.GetHash(chapterRegister.ChapterPath[i]));
+                }
+                _logger.Info($"end calculate hash of episode id: {chapter.ID}");
+
+                chapterRegister.ChapterHash = listHash.ToArray();
+
+                try
+                {
+                    chapterRegisterApi.PutOne("/chapter/register", chapterRegister).GetAwaiter().GetResult();
+                }
+                catch (ApiNotFoundException ex)
+                {
+                    _logger.Error($"Not found episodeRegister id: {chapterRegister.ChapterId}, details error: {ex.Message}");
+                }
+                catch (ApiGenericException ex)
+                {
+                    _logger.Fatal($"Error generic put episodeRegister, details error: {ex.Message}");
+                }
+
+                //end download
+                chapter.PercentualDownload = 100;
+                chapter.StateDownload = "completed";
                 SendStatusDownloadAPIAsync(chapter);
 
-                _logger.Error($"failed download {chapter.ID} v{chapter.CurrentVolume}-c{chapter.CurrentChapter}");
-                return Task.CompletedTask;
+                _logger.Info($"Done download manga {chapter.NameManga} of volume {chapter.CurrentVolume} chapter {chapter.CurrentChapter}");
             }
-
-            //get hash and update
-            _logger.Info($"start calculate hash of chapter id: {chapter.ID}");
-            List<string> listHash = new();
-            for (int i = 0; i <= chapter.NumberMaxImage; i++)
+            else
             {
-                listHash.Add(Hash.GetHash(chapterRegister.ChapterPath[i]));
-            }
-            _logger.Info($"end calculate hash of episode id: {chapter.ID}");
-
-            chapterRegister.ChapterHash = listHash.ToArray();
-
-            try
-            {
-                chapterRegisterApi.PutOne("/chapter/register", chapterRegister).GetAwaiter().GetResult();
-            }
-            catch (ApiNotFoundException ex)
-            {
-                _logger.Error($"Not found episodeRegister id: {chapterRegister.ChapterId}, details error: {ex.Message}");
-            }
-            catch (ApiGenericException ex)
-            {
-                _logger.Fatal($"Error generic put episodeRegister, details error: {ex.Message}");
+                _logger.Info($"This episode is already work by another, episode id: {chapter.ID}");
             }
 
-            //end download
-            chapter.PercentualDownload = 100;
-            chapter.StateDownload = "completed";
-            SendStatusDownloadAPIAsync(chapter);
-
-            _logger.Info($"Done download manga {chapter.NameManga} of volume {chapter.CurrentVolume} chapter {chapter.CurrentChapter}");
             return Task.CompletedTask;
         }
 
