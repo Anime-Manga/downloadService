@@ -12,6 +12,10 @@ namespace Cesxhin.AnimeManga.Domain.Models
     public class ChapterQueue
     {
         [Primary]
+        [Map("namemanga")]
+        public string Name { get; set; }
+
+        [Primary]
         [Map("url")]
         public string Url { get; set; }
 
@@ -28,6 +32,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         {
             return new ChapterQueue
             {
+                Name = queue.Name,
                 Url = queue.Url,
                 NameCfg = queue.NameCfg,
                 TimeRequest = queue.TimeRequest

@@ -12,6 +12,10 @@ namespace Cesxhin.AnimeManga.Domain.Models
     public class EpisodeQueue
     {
         [Primary]
+        [Map("videoid")]
+        public string Name { get; set; }
+
+        [Primary]
         [Map("url")]
         public string Url { get; set; }
 
@@ -27,6 +31,7 @@ namespace Cesxhin.AnimeManga.Domain.Models
         {
             return new EpisodeQueue
             {
+                Name = queue.Name,
                 Url = queue.Url,
                 NameCfg = queue.NameCfg,
                 TimeRequest = queue.TimeRequest

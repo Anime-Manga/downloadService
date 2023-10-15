@@ -5,6 +5,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
 {
     public class GenericQueueDTO
     {
+        public string Name { get; set; }
         public string Url { get; set; }
         public string NameCfg { get; set; }
         public long TimeRequest { get; set; } = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
@@ -14,6 +15,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
         {
             return new GenericQueueDTO
             {
+                Name = queue.Name,
                 Url = queue.Url,
                 NameCfg = queue.NameCfg,
                 TimeRequest = queue.TimeRequest
@@ -25,6 +27,7 @@ namespace Cesxhin.AnimeManga.Domain.DTO
         {
             return new GenericQueueDTO
             {
+                Name = queue.Name,
                 Url = queue.Url,
                 NameCfg = queue.NameCfg,
                 TimeRequest = queue.TimeRequest
