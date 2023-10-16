@@ -1,6 +1,5 @@
 using Cesxhin.AnimeManga.Application.Consumers;
 using Cesxhin.AnimeManga.Domain.DTO;
-using Cesxhin.AnimeManga.Modules.CronJob;
 using Cesxhin.AnimeManga.Modules.Generic;
 using Cesxhin.AnimeManga.Modules.Schema;
 using MassTransit;
@@ -92,16 +91,6 @@ namespace Cesxhin.AnimeManga.DownloadService
                     var level = Environment.GetEnvironmentVariable("LOG_LEVEL").ToLower() ?? "info";
                     LogLevel logLevel = NLogManager.GetLevel(level);
                     NLogManager.Configure(logLevel);
-
-                    //cronjob for check health
-                    services.AddQuartz(q =>
-                    {
-                        q.UseMicrosoftDependencyInjectionJobFactory();
-                        q.ScheduleJob<HealthJob>(trigger => trigger
-                            .StartNow()
-                            .WithDailyTimeIntervalSchedule(x => x.WithIntervalInSeconds(60)), job => job.WithIdentity("download"));
-                    });
-                    services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
                     services.AddHostedService<Worker>();
                 });
