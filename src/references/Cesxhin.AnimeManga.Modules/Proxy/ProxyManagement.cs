@@ -5,63 +5,35 @@ using System.Linq;
 
 namespace Cesxhin.AnimeManga.Modules.Proxy
 {
-    public static class ProxyManagement
+    public class ProxyManagement
     {
-        private static List<string> GetList(string name)
-        {
-            var env = Environment.GetEnvironmentVariable(name);
-            List<string> listEnv = new();
+        private string blackList = "";
+        private List<string> listProxy = new();
 
-            if (!string.IsNullOrEmpty(env))
-                listEnv.AddRange(env.Split(','));
-
-            return listEnv;
-        }
-
-        private static JObject GetBlackList()
-        {
-            var blackList = Environment.GetEnvironmentVariable("BLACK_LIST_PROXY");
-            var jsonBlackList = new JObject();
-
-            if (blackList != null)
-                jsonBlackList = JObject.Parse(blackList);
-
-            return jsonBlackList;
-        }
-        public static void InitProxy()
+        public void InitProxy()
         {
             var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
 
             if (enableProxy == "true")
             {
-                var listProxy = System.IO.File.ReadAllText("proxy.txt");
-
-                Environment.SetEnvironmentVariable("LIST_PROXY", listProxy);
+                listProxy = System.IO.File.ReadAllText("proxy.txt").Split(",").ToList();
             } 
         }
 
-        public static List<string> GetAllIP()
+        public List<string> GetAllIP()
         {
-            return GetList("LIST_PROXY");
+            return listProxy;
         }
 
-        public static string GetIp(string id)
+        public string GetIp()
         {
-            var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
-
-            if(enableProxy == "true")
+            if(EnableProxy())
             {
-                var listProxy = GetList("LIST_PROXY");
-                var blackProxyJson = GetBlackList();
+                var listBlackProxy = blackList.Split(",").ToList();
 
-                if (blackProxyJson.ContainsKey(id))
+                foreach (var blackProxy in listBlackProxy)
                 {
-                    var listBlackProxy = ((string)blackProxyJson[id]).Split(",").ToList();
-
-                    foreach (var blackProxy in listBlackProxy)
-                    {
-                        listProxy = listProxy.Where(e => e != blackProxy).ToList();
-                    }
+                    listProxy = listProxy.Where(e => e != blackProxy).ToList();
                 }
 
                 if (listProxy.Count > 0)
@@ -73,25 +45,21 @@ namespace Cesxhin.AnimeManga.Modules.Proxy
             return null;
         }
 
-        public static bool EnableProxy()
+        public bool EnableProxy()
         {
             var enableProxy = Environment.GetEnvironmentVariable("PROXY_ENABLE") ?? "false";
             return enableProxy == "true";
         }
 
-        public static void BlackListAdd(string ip, string id)
+        public void BlackListAdd(string ip)
         {
-            var jsonBlackList = GetBlackList();
-            if (jsonBlackList.ContainsKey(id))
-            {
-                var list = ((string)jsonBlackList[id]).Split(",").ToList();
-                list.Add(ip);
-                jsonBlackList[id] = string.Join(",", list);
-            }
-            else
-                jsonBlackList[id] = ip;
+            var list = blackList.Split(",").ToList();
 
-            Environment.SetEnvironmentVariable("BLACK_LIST_PROXY", jsonBlackList.ToString());
+            if(list.Find(e => e == ip) == null)
+            {
+                list.Add(ip);
+                blackList = string.Join(",", list);
+            }
         }
     }
 }

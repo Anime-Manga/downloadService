@@ -1,7 +1,6 @@
 using Cesxhin.AnimeManga.Application.Consumers;
-using Cesxhin.AnimeManga.Modules.CronJob;
+using Cesxhin.AnimeManga.Domain.DTO;
 using Cesxhin.AnimeManga.Modules.Generic;
-using Cesxhin.AnimeManga.Modules.Proxy;
 using Cesxhin.AnimeManga.Modules.Schema;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,6 @@ namespace Cesxhin.AnimeManga.DownloadService
         public static void Main(string[] args)
         {
             SchemaControl.Check();
-            ProxyManagement.InitProxy();
 
             CreateHostBuilder(args).Build().Run();
         }
@@ -45,11 +43,13 @@ namespace Cesxhin.AnimeManga.DownloadService
                             {
                                 cfg.ReceiveEndpoint("download-video", e =>
                                 {
+                                    e.EnablePriority(255);
                                     e.Consumer<DownloadVideoConsumer>(cc =>
                                     {
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
                                         cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.Message<EpisodeDTO>(m => m.UseDelayedRedelivery(Retry.Interval(10, TimeSpan.FromSeconds(10))));
                                     });
                                 });
 
@@ -66,11 +66,13 @@ namespace Cesxhin.AnimeManga.DownloadService
                             {
                                 cfg.ReceiveEndpoint("download-book", e =>
                                 {
+                                    e.EnablePriority(255);
                                     e.Consumer<DownloadBookConsumer>(cc =>
                                     {
                                         string limit = Environment.GetEnvironmentVariable("LIMIT_CONSUMER_RABBIT") ?? "3";
 
                                         cc.UseConcurrentMessageLimit(int.Parse(limit));
+                                        cc.Message<ChapterDTO>(m => m.UseDelayedRedelivery(Retry.Interval(10, TimeSpan.FromSeconds(10))));
                                     });
                                 });
 
@@ -89,16 +91,6 @@ namespace Cesxhin.AnimeManga.DownloadService
                     var level = Environment.GetEnvironmentVariable("LOG_LEVEL").ToLower() ?? "info";
                     LogLevel logLevel = NLogManager.GetLevel(level);
                     NLogManager.Configure(logLevel);
-
-                    //cronjob for check health
-                    services.AddQuartz(q =>
-                    {
-                        q.UseMicrosoftDependencyInjectionJobFactory();
-                        q.ScheduleJob<HealthJob>(trigger => trigger
-                            .StartNow()
-                            .WithDailyTimeIntervalSchedule(x => x.WithIntervalInSeconds(60)), job => job.WithIdentity("download"));
-                    });
-                    services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
                     services.AddHostedService<Worker>();
                 });
